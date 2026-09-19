@@ -87,6 +87,18 @@ calibración lineal con satisfacción real.
 
 ---------------------------------------------------------------------------------------------------------------------------------
 
+## 3b. Modo demostración (ver la interfaz sin servidor, p. ej. en Vercel)
+
+El frontend puede ejecutarse **sin backend**: con `NEXT_PUBLIC_DEMO=1` (o automáticamente en Vercel cuando no hay `BACKEND_URL`) sirve
+respuestas de la API guardadas de una **ejecución real** de la aplicación (`frontend/lib/demo-data.json` + `frontend/public/demo/`):
+llamada de ejemplo analizada con Whisper + wav2vec, su audio, PDF/CSV/XLSX/JSON reales y un dataset/entrenamiento de juguete.
+* **Es una demostración, no producción**: la voz de la llamada es sintética (TTS) y el dataset son tonos, así que las emociones **no son representativas**.
+  Un aviso lo indica en pantalla. Subir, etiquetar, entrenar y activar modelos están deshabilitados (no hay servidor que los ejecute).
+* Regenerar los datos: `cd backend && python scripts/export_demo_snapshot.py` (ejecuta el pipeline real; ~3 min con los modelos descargados).
+* Vercel: Root Directory `frontend`, preset Next.js, **sin** variables de entorno → modo demo. Para la app real, defina `BACKEND_URL` y despliegue el backend aparte.
+
+---------------------------------------------------------------------------------------------------------------------------------
+
 ## 4. Requisitos
 
 Python 3.11/3.12 · Node 20+ (probado 22) · FFmpeg (o `imageio-ffmpeg`, ya incluido como respaldo) · opcional: Docker, GPU NVIDIA + drivers CUDA.

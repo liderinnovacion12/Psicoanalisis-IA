@@ -2,10 +2,14 @@
  *  Así la cookie de sesión httpOnly funciona y el <audio> reproduce con autenticación.
  *  En producción con archivos muy grandes, ponga un proxy inverso (nginx/traefik) delante: ver README. */
 const BACKEND = process.env.BACKEND_URL || "http://localhost:8000";
+// Modo demostración sin backend: explícito (NEXT_PUBLIC_DEMO=1|0) o automático en Vercel cuando no hay BACKEND_URL.
+const DEMO = process.env.NEXT_PUBLIC_DEMO ?? (process.env.VERCEL && !process.env.BACKEND_URL ? "1" : "0");
 export default {
-  output: "standalone",
+  env: { NEXT_PUBLIC_DEMO: DEMO },
+  output: DEMO === "1" ? undefined : "standalone",
   reactStrictMode: true,
   async rewrites() {
+    if (DEMO === "1") return [];
     return [{ source: "/api/v1/:path*", destination: `${BACKEND}/api/v1/:path*` }];
   },
   experimental: { proxyTimeout: 30 * 60 * 1000 },

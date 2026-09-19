@@ -5,6 +5,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { useApp } from "@/lib/app-context";
 import { api } from "@/lib/api";
 import { Toasts, Skeleton, Badge } from "./ui";
+import { DEMO } from "@/lib/demo";
 
 const NAV = [
   { href: "/", label: "Dashboard", icon: "▦" },
@@ -66,6 +67,11 @@ export default function Shell({ children }: { children: ReactNode }) {
         </div>
       )}
       <div className="min-w-0">
+        {DEMO && (
+          <div className="border-b border-warn/40 bg-warn/15 px-4 py-1.5 text-center text-xs lg:px-8">
+            <b>MODO DEMOSTRACIÓN</b> — sin servidor: se muestran respuestas reales de la aplicación sobre una llamada de ejemplo <b>sintética (voz TTS)</b>;
+            sus emociones no son representativas. Subir, etiquetar y entrenar están deshabilitados.
+          </div>)}
         <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-line bg-surface/90 px-4 py-2.5 backdrop-blur lg:px-8">
           <div className="flex items-center gap-3">
             <button className="rounded-lg border border-line px-2.5 py-1.5 text-sm lg:hidden" onClick={() => setOpen(true)} aria-label="Menú">☰</button>
@@ -79,7 +85,7 @@ export default function Shell({ children }: { children: ReactNode }) {
             </nav>
           </div>
           <div className="flex items-center gap-2">
-            {dev && !dev.pyannote_available && <Badge tone="warn" className="hidden md:inline-flex">Diarización: respaldo (sin pyannote)</Badge>}
+            {!DEMO && dev && !dev.pyannote_available && <Badge tone="warn" className="hidden md:inline-flex">Diarización: respaldo (sin pyannote)</Badge>}
             <button onClick={toggleTheme} className="rounded-lg border border-line px-2.5 py-1.5 text-sm hover:bg-surface2" aria-label="Cambiar tema" title="Modo claro/oscuro">{theme === "dark" ? "☀" : "☾"}</button>
             <div className="hidden text-right text-xs leading-tight sm:block"><p className="font-medium">{user.name || user.email}</p><p className="text-muted">{user.role}</p></div>
             <button onClick={logout} className="rounded-lg border border-line px-3 py-1.5 text-sm hover:bg-surface2">Salir</button>

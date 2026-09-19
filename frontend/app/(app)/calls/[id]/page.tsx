@@ -1,6 +1,6 @@
 "use client";
 import { use, useCallback, useEffect, useMemo, useState } from "react";
-import { api, downloadUrl } from "@/lib/api";
+import { api, downloadUrl, audioUrl } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { PlayerProvider } from "@/lib/player";
 import { Badge, Button, Card, Notice, Progress, Skeleton, Stat, StatusBadge, Tabs } from "@/components/ui";
@@ -113,7 +113,7 @@ export default function CallDetail({ params }: { params: Promise<{ id: string }>
   const s1 = call.speakers.find((s: any) => s.label === "SPEAKER_01");
 
   return (
-    <PlayerProvider src={`/api/v1/calls/${id}/audio`}>
+    <PlayerProvider src={audioUrl(id)}>
       <div className="space-y-5">
         {Header}
         <div className="sticky top-[57px] z-20"><AudioPlayer duration={call.duration || 0} /></div>

@@ -7,6 +7,8 @@ export class ApiError extends Error {
   }
 }
 
+import { DEMO, DemoBlocked, demoAudioUrl, demoDownload, demoRequest } from "./demo";
+
 const BASE = "/api/v1";
 const GENERIC = "No fue posible completar la operación. Intente nuevamente.";
 
@@ -28,6 +30,10 @@ async function parse(res: Response) {
 }
 
 export async function api<T = any>(path: string, opts: { method?: string; body?: any; form?: FormData; query?: Record<string, any> } = {}): Promise<T> {
+  if (DEMO) {
+    try { return (await demoRequest(opts.method || (opts.body || opts.form ? "POST" : "GET"), path, opts.query)) as T; }
+    catch (e: any) { throw e instanceof DemoBlocked ? new ApiError(e.message, 403) : e; }
+  }
   const q = opts.query
     ? "?" + Object.entries(opts.query).filter(([, v]) => v !== undefined && v !== null && v !== "").flatMap(([k, v]) => Array.isArray(v) ? v.map((x) => `${k}=${encodeURIComponent(x)}`) : [`${k}=${encodeURIComponent(String(v))}`]).join("&")
     : "";
@@ -47,6 +53,7 @@ export async function api<T = any>(path: string, opts: { method?: string; body?:
 
 /** Subida con progreso (XMLHttpRequest); el backend la recibe en streaming. */
 export function uploadWithProgress(path: string, form: FormData, onProgress: (pct: number) => void): Promise<any> {
+  if (DEMO) return Promise.reject(new ApiError("Modo demostración: la subida está deshabilitada. Despliegue el backend para procesar sus propias llamadas.", 403));
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", BASE + path);
@@ -62,5 +69,7 @@ export function uploadWithProgress(path: string, form: FormData, onProgress: (pc
   });
 }
 
+export const audioUrl = (callId: string) => (DEMO ? demoAudioUrl() : `${BASE}/calls/${callId}/audio`);
+
 export const downloadUrl = (path: string, query: Record<string, string> = {}) =>
-  BASE + path + (Object.keys(query).length ? "?" + new URLSearchParams(query).toString() : "");
+  DEMO ? demoDownload(path, query) : BASE + path + (Object.keys(query).length ? "?" + new URLSearchParams(query).toString() : "");

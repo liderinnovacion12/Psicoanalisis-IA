@@ -1,0 +1,2120 @@
+{
+  "call": {
+    "id": "42f1c83050a548fd9e28dcd3d6ef7059",
+    "filename": "llamada_ejemplo_estereo.wav",
+    "display_name": "Llamada de ejemplo (voz sintética)",
+    "created_at": "2026-09-19T22:48:51.368185",
+    "duration": 84.293375,
+    "status": "COMPLETED",
+    "progress": 100.0,
+    "language": "es",
+    "satisfaction_p1": 96.6,
+    "satisfaction_p2": 8.1,
+    "model_version": "emotion_baseline_wav2vec:baseline",
+    "audio_quality": 100.0,
+    "analysis_quality": 93.4,
+    "allow_training": false,
+    "frustration_p1": 0.2166,
+    "frustration_p2": 0.2609,
+    "error": null,
+    "uploaded_by": "2a6c1328423f402693789f50c9c3ba42",
+    "size_bytes": 5394820,
+    "sample_rate": 16000,
+    "channels": 2,
+    "bitrate": 512000,
+    "language_confidence": 0.9869990664216459,
+    "diarization_mode": "channels",
+    "audio_quality_detail": {
+      "score": 100.0,
+      "components": {
+        "snr": 1.0,
+        "clipping": 1.0,
+        "level": 1.0,
+        "speech": 1.0,
+        "bandwidth": 1.0
+      },
+      "low": false,
+      "warnings": [],
+      "levels": {
+        "peak_dbfs": -1.94,
+        "rms_dbfs": -26.6,
+        "noise_floor_dbfs": -100.0,
+        "speech_level_dbfs": -21.72,
+        "snr_db": 78.28,
+        "silence_ratio": 0.3892,
+        "clipping_ratio": 0.0,
+        "frame_count": 3371
+      },
+      "speech_ratio": 0.7082,
+      "vad_engine": "silero",
+      "channel_layout": {
+        "is_stereo_split": true,
+        "reason": "un hablante por canal",
+        "correlation": -0.0049,
+        "active_ratio": [
+          0.2759,
+          0.3147
+        ],
+        "overlap_ratio": 0.0
+      }
+    },
+    "analysis_quality_detail": {
+      "score": 93.4,
+      "components": {
+        "audio": 100.0,
+        "speech": 100.0,
+        "segments": 100.0,
+        "model": 80.0,
+        "diarization": 96.0,
+        "transcription": 94.8
+      },
+      "low": false,
+      "note": "Estimación heurística basada en calidad de audio, cobertura y confianza de los modelos; no equivale a la exactitud real."
+    },
+    "warnings": [
+      "El modelo de emociones activo está entrenado para 'en' y la llamada está en 'es': el rendimiento puede ser inferior. Considere un modelo específico del idioma."
+    ],
+    "summary": {
+      "speakers": {
+        "SPEAKER_00": {
+          "score": 96.6,
+          "confidence": 0.502,
+          "trend": "stable",
+          "initial_score": 96.9,
+          "final_score": 98.6,
+          "interpretation": {
+            "key": "high",
+            "label": "Alta satisfacción"
+          },
+          "metrics": {
+            "dominant_emotion": "happy",
+            "initial_emotion": "happy",
+            "final_emotion": "happy",
+            "frustration": 0.2166,
+            "tension": 0.1475,
+            "positive": 0.8836,
+            "negative": 0.0011,
+            "stability": 0.9479,
+            "mean_probabilities": {
+              "angry": 0.0003,
+              "disgust": 0.0003,
+              "fear": 0.0003,
+              "happy": 0.8836,
+              "neutral": 0.1139,
+              "sad": 0.0001,
+              "surprise": 0.0014
+            },
+            "analyzed_seconds": 35.0,
+            "mean_model_confidence": 0.8993
+          },
+          "factors": {
+            "positive": [
+              {
+                "key": "final_state",
+                "label": "Estado emocional positivo al final de la llamada",
+                "points": 17.0
+              },
+              {
+                "key": "persistence",
+                "label": "Persistencia de estados positivos",
+                "points": 15.5
+              },
+              {
+                "key": "signal",
+                "label": "Predominio de señales emocionales positivas",
+                "points": 14.3
+              },
+              {
+                "key": "stability",
+                "label": "Conversación emocionalmente estable",
+                "points": 4.2
+              }
+            ],
+            "negative": [
+              {
+                "key": "text",
+                "label": "Contexto textual desfavorable (posibles expresiones de queja)",
+                "points": -2.5
+              },
+              {
+                "key": "trend",
+                "label": "Tendencia negativa durante la interacción",
+                "points": -1.5
+              }
+            ]
+          },
+          "components": {
+            "signal": 0.9227,
+            "final_state": 0.9145,
+            "trend": -0.0938,
+            "persistence": 1.0,
+            "stability": 0.8957,
+            "_stability_raw": 0.9479,
+            "text": -0.4091,
+            "prosody": -0.1321
+          },
+          "confidence_level": "moderada"
+        },
+        "SPEAKER_01": {
+          "score": 8.1,
+          "confidence": 0.503,
+          "trend": "stable",
+          "initial_score": 12.2,
+          "final_score": 14.8,
+          "interpretation": {
+            "key": "very_low",
+            "label": "Muy baja satisfacción"
+          },
+          "metrics": {
+            "dominant_emotion": "disgust",
+            "initial_emotion": "disgust",
+            "final_emotion": "fear",
+            "frustration": 0.2609,
+            "tension": 0.4011,
+            "positive": 0.1137,
+            "negative": 0.8148,
+            "stability": 0.675,
+            "mean_probabilities": {
+              "angry": 0.0578,
+              "disgust": 0.3936,
+              "fear": 0.225,
+              "happy": 0.1137,
+              "neutral": 0.0535,
+              "sad": 0.1383,
+              "surprise": 0.0181
+            },
+            "analyzed_seconds": 38.0,
+            "mean_model_confidence": 0.8323
+          },
+          "factors": {
+            "positive": [],
+            "negative": [
+              {
+                "key": "persistence",
+                "label": "Persistencia de estados negativos",
+                "points": -15.5
+              },
+              {
+                "key": "final_state",
+                "label": "Estado emocional negativo al final de la llamada",
+                "points": -11.2
+              },
+              {
+                "key": "signal",
+                "label": "Predominio de señales emocionales negativas",
+                "points": -8.2
+              },
+              {
+                "key": "trend",
+                "label": "Tendencia negativa durante la interacción",
+                "points": -6.9
+              }
+            ]
+          },
+          "components": {
+            "signal": -0.5284,
+            "final_state": -0.599,
+            "trend": -0.4427,
+            "persistence": -1.0,
+            "stability": 0.0,
+            "_stability_raw": 0.675,
+            "text": 0.0322,
+            "prosody": -0.0723
+          },
+          "confidence_level": "moderada"
+        }
+      },
+      "interaction": {
+        "initial": 54.6,
+        "final": 56.7,
+        "variation": 2.1,
+        "message": "Satisfacción estimada estable durante la interacción."
+      },
+      "events_count": 4,
+      "executive_summary": "Durante la llamada, Persona 1 presentó una evolución emocional desde alegría como señal inicial predominante hacia alegría en el tramo final; el modelo estima una satisfacción de 97/100 (confianza moderada) y una tendencia estable. Durante la llamada, Persona 2 presentó una evolución emocional desde disgusto como señal inicial predominante hacia miedo en el tramo final; el modelo estima una satisfacción de 8/100 (confianza moderada) y una tendencia estable. A nivel de interacción, la satisfacción estimada pasó de 55 a 57 (variación +2). Se detectaron 4 momentos destacados: final negativo (1), final positivo (1), recuperación emocional (1), deterioro emocional (1). Estos resultados son estimaciones de un modelo y no constituyen una afirmación definitiva sobre el estado de los participantes; se recomienda revisión humana de los momentos críticos."
+    },
+    "interaction": {
+      "interruptions": {
+        "SPEAKER_00": 0,
+        "SPEAKER_01": 0
+      },
+      "overlap_seconds": 0,
+      "overlap_events": 0,
+      "long_silences": 0,
+      "long_silence_seconds": 0,
+      "pauses": 14,
+      "talk_time": {
+        "SPEAKER_00": 33.0,
+        "SPEAKER_01": 30.9
+      },
+      "talk_ratio": {
+        "SPEAKER_00": 0.5164,
+        "SPEAKER_01": 0.4836
+      },
+      "speech_rate_wpm": {
+        "SPEAKER_00": 140.0,
+        "SPEAKER_01": 124.3
+      },
+      "turn_count": {
+        "SPEAKER_00": 5,
+        "SPEAKER_01": 10
+      },
+      "silence_events": [],
+      "note": "Señales adicionales; no se interpretan automáticamente como algo negativo."
+    },
+    "speakers": [
+      {
+        "id": "9f7561d123f44209a23531cb2bf582f9",
+        "label": "SPEAKER_00",
+        "role": "other",
+        "display_name": null,
+        "channel": 0,
+        "talk_time": 33.0,
+        "name": "Persona 1"
+      },
+      {
+        "id": "98b92d514d1a4644b47b124cbf7c9250",
+        "label": "SPEAKER_01",
+        "role": "other",
+        "display_name": null,
+        "channel": 1,
+        "talk_time": 30.9,
+        "name": "Persona 2"
+      }
+    ],
+    "stages": [
+      {
+        "key": "audio_processing",
+        "label": "Audio",
+        "state": "COMPLETED",
+        "progress": 100,
+        "message": "Generando copia de reproducción",
+        "seconds": 5.0
+      },
+      {
+        "key": "diarization",
+        "label": "Diarización",
+        "state": "COMPLETED",
+        "progress": 100,
+        "message": null,
+        "seconds": 0.0
+      },
+      {
+        "key": "transcription",
+        "label": "Transcripción",
+        "state": "COMPLETED",
+        "progress": 100,
+        "message": "Transcribiendo",
+        "seconds": 24.8
+      },
+      {
+        "key": "emotion_analysis",
+        "label": "Emociones",
+        "state": "COMPLETED",
+        "progress": 100,
+        "message": "Ventanas 18/18",
+        "seconds": 41.1
+      },
+      {
+        "key": "satisfaction",
+        "label": "Satisfacción",
+        "state": "COMPLETED",
+        "progress": 100,
+        "message": null,
+        "seconds": 0.0
+      },
+      {
+        "key": "report",
+        "label": "Informe",
+        "state": "COMPLETED",
+        "progress": 100,
+        "message": null,
+        "seconds": 0.0
+      }
+    ],
+    "model_id": "674fd4c6a3d648b590abbf0024c11c40",
+    "completed_at": "2026-09-19T22:50:02.386522",
+    "retention_until": null,
+    "checkpoints": {
+      "audio_processing": {
+        "status": "COMPLETED",
+        "progress": 100,
+        "updated_at": "2026-09-19T22:48:56.398778+00:00",
+        "message": "Generando copia de reproducción",
+        "mode": "stereo_split",
+        "seconds": 5.0
+      },
+      "diarization": {
+        "status": "COMPLETED",
+        "progress": 100,
+        "updated_at": "2026-09-19T22:48:56.408145+00:00",
+        "engine": "channels",
+        "quality": 96.0,
+        "n_speakers_detected": 2,
+        "details": {
+          "overlap_ratio": 0.0,
+          "duration": 82.7
+        },
+        "seconds": 0.0
+      },
+      "transcription": {
+        "status": "COMPLETED",
+        "progress": 100,
+        "updated_at": "2026-09-19T22:49:21.194334+00:00",
+        "message": "Transcribiendo",
+        "engine": "faster-whisper",
+        "model": "whisper-small",
+        "utterances": 11,
+        "words": 141,
+        "mean_confidence": 0.9478,
+        "language": "es",
+        "language_confidence": 0.9869990664216459,
+        "seconds": 24.8
+      },
+      "emotion_analysis": {
+        "status": "COMPLETED",
+        "progress": 100,
+        "updated_at": "2026-09-19T22:50:02.338286+00:00",
+        "done": 18,
+        "total": 18,
+        "valid": 18,
+        "message": "Ventanas 18/18",
+        "model": "emotion_baseline_wav2vec:baseline",
+        "device": "cpu",
+        "seconds": 41.1
+      },
+      "satisfaction": {
+        "status": "COMPLETED",
+        "progress": 100,
+        "updated_at": "2026-09-19T22:50:02.365277+00:00",
+        "events": 4,
+        "mode": "rules",
+        "seconds": 0.0
+      },
+      "report": {
+        "status": "COMPLETED",
+        "progress": 100,
+        "updated_at": "2026-09-19T22:50:02.380515+00:00",
+        "seconds": 0.0
+      }
+    }
+  },
+  "speakers": [
+    {
+      "id": "9f7561d123f44209a23531cb2bf582f9",
+      "label": "SPEAKER_00",
+      "role": "other",
+      "display_name": null,
+      "channel": 0,
+      "talk_time": 33.0,
+      "name": "Persona 1"
+    },
+    {
+      "id": "98b92d514d1a4644b47b124cbf7c9250",
+      "label": "SPEAKER_01",
+      "role": "other",
+      "display_name": null,
+      "channel": 1,
+      "talk_time": 30.9,
+      "name": "Persona 2"
+    }
+  ],
+  "segments": [
+    {
+      "speaker": "SPEAKER_01",
+      "start": 0.4,
+      "end": 5.8,
+      "overlap": false,
+      "source": "channels"
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 6.8,
+      "end": 8.5,
+      "overlap": false,
+      "source": "channels"
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "start": 10.0,
+      "end": 15.9,
+      "overlap": false,
+      "source": "channels"
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 17.2,
+      "end": 21.1,
+      "overlap": false,
+      "source": "channels"
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 22.1,
+      "end": 25.8,
+      "overlap": false,
+      "source": "channels"
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "start": 27.3,
+      "end": 39.8,
+      "overlap": false,
+      "source": "channels"
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 41.2,
+      "end": 43.7,
+      "overlap": false,
+      "source": "channels"
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 44.8,
+      "end": 49.1,
+      "overlap": false,
+      "source": "channels"
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "start": 50.5,
+      "end": 54.8,
+      "overlap": false,
+      "source": "channels"
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 56.3,
+      "end": 57.8,
+      "overlap": false,
+      "source": "channels"
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 58.9,
+      "end": 63.8,
+      "overlap": false,
+      "source": "channels"
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "start": 65.5,
+      "end": 71.5,
+      "overlap": false,
+      "source": "channels"
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 72.8,
+      "end": 73.7,
+      "overlap": false,
+      "source": "channels"
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 74.8,
+      "end": 76.9,
+      "overlap": false,
+      "source": "channels"
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "start": 78.4,
+      "end": 82.7,
+      "overlap": false,
+      "source": "channels"
+    }
+  ],
+  "transcription": [
+    {
+      "id": "63eeb455a0d34d73b95208432ef4bb31",
+      "speaker": "SPEAKER_01",
+      "start": 0.05,
+      "end": 8.31,
+      "text": "Buenos días, gracias por comunicarse con atención al cliente. ¿En qué puedo ayudarle?",
+      "confidence": 0.9148,
+      "language": "es",
+      "sentiment": {
+        "score": 0.0692,
+        "confidence": 0.15,
+        "frustration": 0.0,
+        "resolution": 0.0,
+        "label": "neutral",
+        "cues": []
+      },
+      "pii_count": 0
+    },
+    {
+      "id": "95b0145c53bf4de4a729031eb57a6b8e",
+      "speaker": "SPEAKER_00",
+      "start": 9.74,
+      "end": 15.64,
+      "text": "Hola, llevo tres días esperando una solución y nadie me ayuda. Estoy muy molesto con el servicio.",
+      "confidence": 0.9466,
+      "language": "es",
+      "sentiment": {
+        "score": -0.8337,
+        "confidence": 1.0,
+        "frustration": 1.0,
+        "resolution": 0.0,
+        "label": "negative",
+        "cues": [
+          {
+            "type": "frustration",
+            "phrase": "llevo tres dias"
+          },
+          {
+            "type": "frustration",
+            "phrase": "nadie me"
+          },
+          {
+            "type": "frustration",
+            "phrase": "nadie me ayuda"
+          },
+          {
+            "type": "frustration",
+            "phrase": "muy molesto"
+          }
+        ]
+      },
+      "pii_count": 0
+    },
+    {
+      "id": "10f490a7161541c58133e6ffe0d0c7ae",
+      "speaker": "SPEAKER_01",
+      "start": 17.13,
+      "end": 25.61,
+      "text": "Entiendo la situación, permítame ayudarle. Me puede indicar su nombre y su número de pedido.",
+      "confidence": 0.9856,
+      "language": "es",
+      "sentiment": {
+        "score": 0.0,
+        "confidence": 0.15,
+        "frustration": 0.0,
+        "resolution": 0.0,
+        "label": "neutral",
+        "cues": []
+      },
+      "pii_count": 0
+    },
+    {
+      "id": "dffbaaa2ecd14f2db69a3ac3c1ed2825",
+      "speaker": "SPEAKER_00",
+      "start": 27.23,
+      "end": 39.65,
+      "text": "Mi nombre es Juan Pérez y mi teléfono es 555-123-4567. Ya di el número tres veces, es el 4512. Estoy cansado de llamar otra vez.",
+      "confidence": 0.9598,
+      "language": "es",
+      "sentiment": {
+        "score": -0.8337,
+        "confidence": 0.75,
+        "frustration": 1.0,
+        "resolution": 0.0,
+        "label": "negative",
+        "cues": [
+          {
+            "type": "frustration",
+            "phrase": "cansado de"
+          },
+          {
+            "type": "frustration",
+            "phrase": "otra vez"
+          }
+        ]
+      },
+      "pii_count": 2
+    },
+    {
+      "id": "fe2ab487d58042f692e9abb7b2cad43d",
+      "speaker": "SPEAKER_01",
+      "start": 41.18,
+      "end": 48.72,
+      "text": "Lamento mucho el inconveniente. Ya estoy revisando su caso y veo cuál fue el problema.",
+      "confidence": 0.9858,
+      "language": "es",
+      "sentiment": {
+        "score": 0.1029,
+        "confidence": 0.15,
+        "frustration": 0.0,
+        "resolution": 0.0,
+        "label": "neutral",
+        "cues": []
+      },
+      "pii_count": 0
+    },
+    {
+      "id": "8878879e4a6c4c79a430e3c01a57d7c0",
+      "speaker": "SPEAKER_00",
+      "start": 50.44,
+      "end": 54.58,
+      "text": "Bueno, espero que ahora sí lo puedan resolver, porque esto es inaceptable.",
+      "confidence": 0.9666,
+      "language": "es",
+      "sentiment": {
+        "score": -0.7649,
+        "confidence": 0.518,
+        "frustration": 0.9,
+        "resolution": 0.0,
+        "label": "negative",
+        "cues": [
+          {
+            "type": "frustration",
+            "phrase": "inaceptable"
+          }
+        ]
+      },
+      "pii_count": 0
+    },
+    {
+      "id": "7d2a10b2ddbb46b9a5f8f4f71a7af6ac",
+      "speaker": "SPEAKER_01",
+      "start": 56.29,
+      "end": 63.63,
+      "text": "Ya lo solucione. Su pedido saldrá hoy mismo y recibirá un correo de confirmación.",
+      "confidence": 0.9258,
+      "language": "es",
+      "sentiment": {
+        "score": 0.0,
+        "confidence": 0.15,
+        "frustration": 0.0,
+        "resolution": 0.0,
+        "label": "neutral",
+        "cues": []
+      },
+      "pii_count": 0
+    },
+    {
+      "id": "631f1daeb914455bb069728a09678a5b",
+      "speaker": "SPEAKER_00",
+      "start": 65.51,
+      "end": 71.11,
+      "text": "Ah, perfecto. Muchas gracias, eso me ayuda bastante. Excelente servicio.",
+      "confidence": 0.8771,
+      "language": "es",
+      "sentiment": {
+        "score": 0.8069,
+        "confidence": 1.0,
+        "frustration": 0.0,
+        "resolution": 0.8,
+        "label": "positive",
+        "cues": [
+          {
+            "type": "resolution",
+            "phrase": "muchas gracias"
+          },
+          {
+            "type": "resolution",
+            "phrase": "perfecto"
+          },
+          {
+            "type": "resolution",
+            "phrase": "excelente"
+          }
+        ]
+      },
+      "pii_count": 0
+    },
+    {
+      "id": "08cf7df4017e435e971d4d12fbdeee73",
+      "speaker": "SPEAKER_01",
+      "start": 72.7,
+      "end": 73.38,
+      "text": "Con gusto.",
+      "confidence": 0.9105,
+      "language": "es",
+      "sentiment": {
+        "score": 0.0,
+        "confidence": 0.15,
+        "frustration": 0.0,
+        "resolution": 0.0,
+        "label": "neutral",
+        "cues": []
+      },
+      "pii_count": 0
+    },
+    {
+      "id": "dd3891a8460445ab83b9c6907ad8842f",
+      "speaker": "SPEAKER_01",
+      "start": 74.66,
+      "end": 76.58,
+      "text": "Puedo ayudarle en algo más.",
+      "confidence": 0.9552,
+      "language": "es",
+      "sentiment": {
+        "score": 0.0,
+        "confidence": 0.15,
+        "frustration": 0.0,
+        "resolution": 0.0,
+        "label": "neutral",
+        "cues": []
+      },
+      "pii_count": 0
+    },
+    {
+      "id": "4120590d87764393b3d8afcfe742d0de",
+      "speaker": "SPEAKER_00",
+      "start": 78.36,
+      "end": 82.54,
+      "text": "No, eso es todo. Muchas gracias, que tenga un buen día.",
+      "confidence": 0.9515,
+      "language": "es",
+      "sentiment": {
+        "score": 0.7237,
+        "confidence": 0.5188,
+        "frustration": 0.0,
+        "resolution": 0.7,
+        "label": "positive",
+        "cues": [
+          {
+            "type": "resolution",
+            "phrase": "muchas gracias"
+          }
+        ]
+      },
+      "pii_count": 0
+    }
+  ],
+  "emotions": [
+    {
+      "id": "bf60bb8bb09149c0b58dec5ec94f3d46",
+      "speaker": "SPEAKER_01",
+      "segment_id": "ef6f4786a2b04573bcb59044cd5cb755",
+      "start": 0.4,
+      "end": 5.4,
+      "duration": 5.0,
+      "emotion": "disgust",
+      "confidence": 0.80495,
+      "probabilities": {
+        "angry": 0.00124,
+        "disgust": 0.804952,
+        "fear": 0.023776,
+        "happy": 0.000372,
+        "neutral": 0.000184,
+        "sad": 0.168908,
+        "surprise": 0.000568
+      },
+      "model": "emotion_baseline_wav2vec",
+      "model_version": "baseline",
+      "prosody": {
+        "rms_db": -25.815270783696395,
+        "energy_std_db": 7.858269710188417,
+        "pause_ratio": 0.17684887459807075,
+        "f0_mean": 139.3337218994326,
+        "f0_std": 34.598850323942564,
+        "f0_range_st": 10.845969424354585
+      }
+    },
+    {
+      "id": "f8fde9fae55346b9b332e5533f2bd7fd",
+      "speaker": "SPEAKER_01",
+      "segment_id": "c5414306a7364fd4a0bc326f8eb03079",
+      "start": 6.8,
+      "end": 8.5,
+      "duration": 1.7,
+      "emotion": "happy",
+      "confidence": 0.38051,
+      "probabilities": {
+        "angry": 0.058709,
+        "disgust": 0.004144,
+        "fear": 0.333833,
+        "happy": 0.380515,
+        "neutral": 0.05206,
+        "sad": 0.003144,
+        "surprise": 0.167596
+      },
+      "model": "emotion_baseline_wav2vec",
+      "model_version": "baseline",
+      "prosody": {
+        "rms_db": -24.918863673521287,
+        "energy_std_db": 6.773754686612148,
+        "pause_ratio": 0.12380952380952381,
+        "f0_mean": 124.47985025468962,
+        "f0_std": 21.55300865941554,
+        "f0_range_st": 10.220569021810295
+      }
+    },
+    {
+      "id": "568346298ca64805a0282b20a904b67d",
+      "speaker": "SPEAKER_00",
+      "segment_id": "e81fa405b31a4edaaf09d2e325625c60",
+      "start": 10.0,
+      "end": 15.0,
+      "duration": 5.0,
+      "emotion": "happy",
+      "confidence": 0.99529,
+      "probabilities": {
+        "angry": 0.00019,
+        "disgust": 5e-05,
+        "fear": 0.00146,
+        "happy": 0.995287,
+        "neutral": 0.000653,
+        "sad": 2.9e-05,
+        "surprise": 0.002329
+      },
+      "model": "emotion_baseline_wav2vec",
+      "model_version": "baseline",
+      "prosody": {
+        "rms_db": -20.442787159091385,
+        "energy_std_db": 6.533753592560718,
+        "pause_ratio": 0.2411575562700965,
+        "f0_mean": 226.6503568970739,
+        "f0_std": 32.040323051016166,
+        "f0_range_st": 7.746134840708385
+      }
+    },
+    {
+      "id": "d7f7b58090994a878bf00df55b618583",
+      "speaker": "SPEAKER_01",
+      "segment_id": "dac4e091174e4e29a8a75a554dc5a21c",
+      "start": 17.2,
+      "end": 21.1,
+      "duration": 3.9,
+      "emotion": "happy",
+      "confidence": 0.59934,
+      "probabilities": {
+        "angry": 0.002391,
+        "disgust": 0.003661,
+        "fear": 0.13547,
+        "happy": 0.599336,
+        "neutral": 0.014318,
+        "sad": 0.240485,
+        "surprise": 0.004339
+      },
+      "model": "emotion_baseline_wav2vec",
+      "model_version": "baseline",
+      "prosody": {
+        "rms_db": -24.79510118984162,
+        "energy_std_db": 7.214318161812321,
+        "pause_ratio": 0.1900826446280992,
+        "f0_mean": 133.22270570591138,
+        "f0_std": 24.78527688155484,
+        "f0_range_st": 10.900177784776654
+      }
+    },
+    {
+      "id": "dec4e8c0980349a9aaf7e245af74fab9",
+      "speaker": "SPEAKER_01",
+      "segment_id": "b2c04d2eabf94475b3ca170b14e413c4",
+      "start": 22.1,
+      "end": 25.8,
+      "duration": 3.7,
+      "emotion": "disgust",
+      "confidence": 0.98172,
+      "probabilities": {
+        "angry": 0.000383,
+        "disgust": 0.981721,
+        "fear": 0.004803,
+        "happy": 0.000106,
+        "neutral": 6.2e-05,
+        "sad": 0.01266,
+        "surprise": 0.000264
+      },
+      "model": "emotion_baseline_wav2vec",
+      "model_version": "baseline",
+      "prosody": {
+        "rms_db": -24.493173937778295,
+        "energy_std_db": 6.2699723018928255,
+        "pause_ratio": 0.08695652173913049,
+        "f0_mean": 135.17559627891404,
+        "f0_std": 16.729782183628675,
+        "f0_range_st": 7.22884405770955
+      }
+    },
+    {
+      "id": "dea61ad993b64277abbe4a37f97a04ae",
+      "speaker": "SPEAKER_00",
+      "segment_id": "2cd340ef279b42e39c59d77d798cf44a",
+      "start": 27.3,
+      "end": 32.3,
+      "duration": 5.0,
+      "emotion": "happy",
+      "confidence": 0.99617,
+      "probabilities": {
+        "angry": 0.000127,
+        "disgust": 3.8e-05,
+        "fear": 0.000219,
+        "happy": 0.996166,
+        "neutral": 0.000283,
+        "sad": 5e-06,
+        "surprise": 0.003162
+      },
+      "model": "emotion_baseline_wav2vec",
+      "model_version": "baseline",
+      "prosody": {
+        "rms_db": -25.278617045145747,
+        "energy_std_db": 7.476335247045562,
+        "pause_ratio": 0.112540192926045,
+        "f0_mean": 224.3356539169044,
+        "f0_std": 28.350726193399353,
+        "f0_range_st": 6.697051384993744
+      }
+    },
+    {
+      "id": "a4bef8f446d8484190aa9caa8c6198a7",
+      "speaker": "SPEAKER_00",
+      "segment_id": "2cd340ef279b42e39c59d77d798cf44a",
+      "start": 29.8,
+      "end": 34.8,
+      "duration": 5.0,
+      "emotion": "happy",
+      "confidence": 0.99942,
+      "probabilities": {
+        "angry": 7.6e-05,
+        "disgust": 3e-05,
+        "fear": 2.7e-05,
+        "happy": 0.999421,
+        "neutral": 0.000156,
+        "sad": 4e-06,
+        "surprise": 0.000285
+      },
+      "model": "emotion_baseline_wav2vec",
+      "model_version": "baseline",
+      "prosody": {
+        "rms_db": -25.82360355352786,
+        "energy_std_db": 7.668907894747224,
+        "pause_ratio": 0.24437299035369775,
+        "f0_mean": 224.01865878872258,
+        "f0_std": 30.93446117711121,
+        "f0_range_st": 6.964424740142676
+      }
+    },
+    {
+      "id": "e1c58197bbc348dd9bc749cff1cac798",
+      "speaker": "SPEAKER_00",
+      "segment_id": "2cd340ef279b42e39c59d77d798cf44a",
+      "start": 32.3,
+      "end": 37.3,
+      "duration": 5.0,
+      "emotion": "happy",
+      "confidence": 0.99954,
+      "probabilities": {
+        "angry": 4.7e-05,
+        "disgust": 2.6e-05,
+        "fear": 2.7e-05,
+        "happy": 0.999543,
+        "neutral": 0.000205,
+        "sad": 6e-06,
+        "surprise": 0.000146
+      },
+      "model": "emotion_baseline_wav2vec",
+      "model_version": "baseline",
+      "prosody": {
+        "rms_db": -26.152767759340534,
+        "energy_std_db": 7.642100238218074,
+        "pause_ratio": 0.26688102893890675,
+        "f0_mean": 218.7361805309063,
+        "f0_std": 32.56888487027674,
+        "f0_range_st": 8.559978011086333
+      }
+    },
+    {
+      "id": "fc8601582cd04138b8752753f88cff2c",
+      "speaker": "SPEAKER_00",
+      "segment_id": "2cd340ef279b42e39c59d77d798cf44a",
+      "start": 34.8,
+      "end": 39.8,
+      "duration": 5.0,
+      "emotion": "neutral",
+      "confidence": 0.5701,
+      "probabilities": {
+        "angry": 0.000333,
+        "disgust": 0.000765,
+        "fear": 0.000166,
+        "happy": 0.427268,
+        "neutral": 0.570105,
+        "sad": 0.00016,
+        "surprise": 0.001204
+      },
+      "model": "emotion_baseline_wav2vec",
+      "model_version": "baseline",
+      "prosody": {
+        "rms_db": -26.25832200710141,
+        "energy_std_db": 7.719084703444311,
+        "pause_ratio": 0.28938906752411575,
+        "f0_mean": 216.67531209581853,
+        "f0_std": 33.0834780581568,
+        "f0_range_st": 8.139750992916744
+      }
+    },
+    {
+      "id": "e6fdcccf9dfc4249950fdabb8c5eaa10",
+      "speaker": "SPEAKER_01",
+      "segment_id": "1084aea71a0c41b6b4a4d8f2a38f8dff",
+      "start": 41.2,
+      "end": 43.7,
+      "duration": 2.5,
+      "emotion": "sad",
+      "confidence": 0.98725,
+      "probabilities": {
+        "angry": 0.000373,
+        "disgust": 0.011974,
+        "fear": 0.000189,
+        "happy": 8.1e-05,
+        "neutral": 5e-05,
+        "sad": 0.987253,
+        "surprise": 8e-05
+      },
+      "model": "emotion_baseline_wav2vec",
+      "model_version": "baseline",
+      "prosody": {
+        "rms_db": -23.570150165371214,
+        "energy_std_db": 6.677929310317388,
+        "pause_ratio": 0.10322580645161294,
+        "f0_mean": 137.53049639013167,
+        "f0_std": 25.422958338749407,
+        "f0_range_st": 10.346203611998552
+      }
+    },
+    {
+      "id": "eb3bf15a197641db9e119519fa8109ec",
+      "speaker": "SPEAKER_01",
+      "segment_id": "581f4d6d0ab64c798654c9b6d64f2605",
+      "start": 44.8,
+      "end": 49.1,
+      "duration": 4.3,
+      "emotion": "disgust",
+      "confidence": 0.99954,
+      "probabilities": {
+        "angry": 0.000101,
+        "disgust": 0.999544,
+        "fear": 0.000136,
+        "happy": 4.4e-05,
+        "neutral": 5e-06,
+        "sad": 7.4e-05,
+        "surprise": 9.5e-05
+      },
+      "model": "emotion_baseline_wav2vec",
+      "model_version": "baseline",
+      "prosody": {
+        "rms_db": -24.55307704749715,
+        "energy_std_db": 6.839446024849969,
+        "pause_ratio": 0.13857677902621723,
+        "f0_mean": 133.5497595402705,
+        "f0_std": 20.62471522599648,
+        "f0_range_st": 10.374248303564398
+      }
+    },
+    {
+      "id": "d1408b643fd845d5accac58633d94e9d",
+      "speaker": "SPEAKER_00",
+      "segment_id": "e9ab15360bd9400196afb5161371c62b",
+      "start": 50.5,
+      "end": 54.8,
+      "duration": 4.3,
+      "emotion": "happy",
+      "confidence": 0.99804,
+      "probabilities": {
+        "angry": 0.000208,
+        "disgust": 3.8e-05,
+        "fear": 0.000125,
+        "happy": 0.998042,
+        "neutral": 0.000467,
+        "sad": 1.2e-05,
+        "surprise": 0.001108
+      },
+      "model": "emotion_baseline_wav2vec",
+      "model_version": "baseline",
+      "prosody": {
+        "rms_db": -25.284403520837763,
+        "energy_std_db": 7.351041326768996,
+        "pause_ratio": 0.24344569288389517,
+        "f0_mean": 205.95189595711483,
+        "f0_std": 29.972069644670867,
+        "f0_range_st": 9.121139843293529
+      }
+    },
+    {
+      "id": "cf1a4d6c672d4e31a4b399f9726aadeb",
+      "speaker": "SPEAKER_01",
+      "segment_id": "b3882b2040514488aafae26dc15484d6",
+      "start": 56.3,
+      "end": 57.8,
+      "duration": 1.5,
+      "emotion": "neutral",
+      "confidence": 0.89142,
+      "probabilities": {
+        "angry": 0.002302,
+        "disgust": 0.022466,
+        "fear": 0.002277,
+        "happy": 0.072819,
+        "neutral": 0.891416,
+        "sad": 0.001551,
+        "surprise": 0.007169
+      },
+      "model": "emotion_baseline_wav2vec",
+      "model_version": "baseline",
+      "prosody": {
+        "rms_db": -25.154673432824204,
+        "energy_std_db": 7.150032189430939,
+        "pause_ratio": 0.08695652173913049,
+        "f0_mean": 132.78312274522418,
+        "f0_std": 28.08736412224913,
+        "f0_range_st": 11.848952258265001
+      }
+    },
+    {
+      "id": "4d939ac18f844a13b6b5d2c7a037fc5a",
+      "speaker": "SPEAKER_01",
+      "segment_id": "18647c58dacc4a63979f22b8f0acbff0",
+      "start": 58.9,
+      "end": 63.8,
+      "duration": 4.9,
+      "emotion": "fear",
+      "confidence": 0.99986,
+      "probabilities": {
+        "angry": 4e-06,
+        "disgust": 6e-06,
+        "fear": 0.999858,
+        "happy": 1.1e-05,
+        "neutral": 6e-06,
+        "sad": 6.9e-05,
+        "surprise": 4.5e-05
+      },
+      "model": "emotion_baseline_wav2vec",
+      "model_version": "baseline",
+      "prosody": {
+        "rms_db": -25.337780534375227,
+        "energy_std_db": 6.5814526559208995,
+        "pause_ratio": 0.0360655737704918,
+        "f0_mean": 132.4480808903458,
+        "f0_std": 21.22281551853809,
+        "f0_range_st": 6.636574189738312
+      }
+    },
+    {
+      "id": "59399bcba631471b8f5b55d4a26cbf12",
+      "speaker": "SPEAKER_00",
+      "segment_id": "bfe82740f2004f7f9f38ec90045818fe",
+      "start": 65.5,
+      "end": 70.5,
+      "duration": 5.0,
+      "emotion": "happy",
+      "confidence": 0.99127,
+      "probabilities": {
+        "angry": 0.000257,
+        "disgust": 0.000366,
+        "fear": 6.2e-05,
+        "happy": 0.991269,
+        "neutral": 0.00745,
+        "sad": 5.7e-05,
+        "surprise": 0.000538
+      },
+      "model": "emotion_baseline_wav2vec",
+      "model_version": "baseline",
+      "prosody": {
+        "rms_db": -25.937420553298598,
+        "energy_std_db": 7.424327476643505,
+        "pause_ratio": 0.5016077170418006,
+        "f0_mean": 214.56421351971687,
+        "f0_std": 39.599529980439684,
+        "f0_range_st": 11.185832843519428
+      }
+    },
+    {
+      "id": "a59b8dbeef534e7abd31cb58010b44bc",
+      "speaker": "SPEAKER_00",
+      "segment_id": "bfe82740f2004f7f9f38ec90045818fe",
+      "start": 66.5,
+      "end": 71.5,
+      "duration": 5.0,
+      "emotion": "happy",
+      "confidence": 0.94548,
+      "probabilities": {
+        "angry": 0.000254,
+        "disgust": 0.000614,
+        "fear": 6.9e-05,
+        "happy": 0.945478,
+        "neutral": 0.052971,
+        "sad": 0.000162,
+        "surprise": 0.000452
+      },
+      "model": "emotion_baseline_wav2vec",
+      "model_version": "baseline",
+      "prosody": {
+        "rms_db": -26.505986721238237,
+        "energy_std_db": 7.603350668823743,
+        "pause_ratio": 0.4115755627009646,
+        "f0_mean": 219.5109776866874,
+        "f0_std": 41.62291881665041,
+        "f0_range_st": 11.215633568423996
+      }
+    },
+    {
+      "id": "40888dae04d045a0bbb6716bf5df26a9",
+      "speaker": "SPEAKER_01",
+      "segment_id": "988eaf39479f425cbaa6c16524a0efe5",
+      "start": 74.8,
+      "end": 76.9,
+      "duration": 2.1,
+      "emotion": "angry",
+      "confidence": 0.6645,
+      "probabilities": {
+        "angry": 0.6645,
+        "disgust": 0.030822,
+        "fear": 0.234958,
+        "happy": 0.010839,
+        "neutral": 0.006851,
+        "sad": 0.004489,
+        "surprise": 0.047541
+      },
+      "model": "emotion_baseline_wav2vec",
+      "model_version": "baseline",
+      "prosody": {
+        "rms_db": -24.512775363135486,
+        "energy_std_db": 6.6508950968156775,
+        "pause_ratio": 0.05384615384615388,
+        "f0_mean": 136.56309401091443,
+        "f0_std": 22.31201338332438,
+        "f0_range_st": 8.499464116597936
+      }
+    },
+    {
+      "id": "b09642af5adb4deabb3e48752b8d0f25",
+      "speaker": "SPEAKER_00",
+      "segment_id": "81c6023fb7e4489c9c7d595251224491",
+      "start": 78.4,
+      "end": 82.7,
+      "duration": 4.3,
+      "emotion": "happy",
+      "confidence": 0.67901,
+      "probabilities": {
+        "angry": 0.001174,
+        "disgust": 0.00084,
+        "fear": 0.00032,
+        "happy": 0.679007,
+        "neutral": 0.316246,
+        "sad": 0.000267,
+        "surprise": 0.002146
+      },
+      "model": "emotion_baseline_wav2vec",
+      "model_version": "baseline",
+      "prosody": {
+        "rms_db": -25.429195870935995,
+        "energy_std_db": 7.3966695112264285,
+        "pause_ratio": 0.3820224719101124,
+        "f0_mean": 214.94901658858305,
+        "f0_std": 29.78275704611889,
+        "f0_range_st": 7.777114632140275
+      }
+    }
+  ],
+  "satisfaction": {
+    "speakers": {
+      "SPEAKER_00": {
+        "score": 96.6,
+        "confidence": 0.502,
+        "trend": "stable",
+        "initial_score": 96.9,
+        "final_score": 98.6,
+        "engine_version": "rules-1.0",
+        "timeline": [
+          {
+            "t": 20.0,
+            "score": 78.58
+          },
+          {
+            "t": 30.0,
+            "score": 78.99
+          },
+          {
+            "t": 40.0,
+            "score": 83.12
+          },
+          {
+            "t": 50.0,
+            "score": 85.8
+          },
+          {
+            "t": 60.0,
+            "score": 88.12
+          },
+          {
+            "t": 70.0,
+            "score": 91.21
+          },
+          {
+            "t": 80.0,
+            "score": 93.96
+          },
+          {
+            "t": 84.29,
+            "score": 95.89
+          }
+        ],
+        "components": {
+          "signal": 0.9227,
+          "final_state": 0.9145,
+          "trend": -0.0938,
+          "persistence": 1.0,
+          "stability": 0.8957,
+          "_stability_raw": 0.9479,
+          "text": -0.4091,
+          "prosody": -0.1321
+        },
+        "contributions": {
+          "signal": 14.33,
+          "final_state": 17.05,
+          "trend": -1.46,
+          "persistence": 15.53,
+          "stability": 4.17,
+          "text": -2.54,
+          "prosody": -0.51
+        },
+        "factors": {
+          "positive": [
+            {
+              "key": "final_state",
+              "label": "Estado emocional positivo al final de la llamada",
+              "points": 17.0
+            },
+            {
+              "key": "persistence",
+              "label": "Persistencia de estados positivos",
+              "points": 15.5
+            },
+            {
+              "key": "signal",
+              "label": "Predominio de señales emocionales positivas",
+              "points": 14.3
+            },
+            {
+              "key": "stability",
+              "label": "Conversación emocionalmente estable",
+              "points": 4.2
+            }
+          ],
+          "negative": [
+            {
+              "key": "text",
+              "label": "Contexto textual desfavorable (posibles expresiones de queja)",
+              "points": -2.5
+            },
+            {
+              "key": "trend",
+              "label": "Tendencia negativa durante la interacción",
+              "points": -1.5
+            }
+          ]
+        },
+        "metrics": {
+          "dominant_emotion": "happy",
+          "initial_emotion": "happy",
+          "final_emotion": "happy",
+          "frustration": 0.2166,
+          "tension": 0.1475,
+          "positive": 0.8836,
+          "negative": 0.0011,
+          "stability": 0.9479,
+          "mean_probabilities": {
+            "angry": 0.0003,
+            "disgust": 0.0003,
+            "fear": 0.0003,
+            "happy": 0.8836,
+            "neutral": 0.1139,
+            "sad": 0.0001,
+            "surprise": 0.0014
+          },
+          "analyzed_seconds": 35.0,
+          "mean_model_confidence": 0.8993
+        },
+        "interpretation": {
+          "key": "high",
+          "label": "Alta satisfacción"
+        },
+        "mode": "rules",
+        "score_rules": 96.58,
+        "confidence_parts": {
+          "model": 1.0,
+          "coverage": 0.456,
+          "audio_quality": 1.0,
+          "text": 1.0,
+          "language_mismatch": true
+        }
+      },
+      "SPEAKER_01": {
+        "score": 8.1,
+        "confidence": 0.503,
+        "trend": "stable",
+        "initial_score": 12.2,
+        "final_score": 14.8,
+        "engine_version": "rules-1.0",
+        "timeline": [
+          {
+            "t": 10.0,
+            "score": 33.94
+          },
+          {
+            "t": 20.0,
+            "score": 40.2
+          },
+          {
+            "t": 30.0,
+            "score": 40.59
+          },
+          {
+            "t": 40.0,
+            "score": 40.84
+          },
+          {
+            "t": 50.0,
+            "score": 29.19
+          },
+          {
+            "t": 60.0,
+            "score": 23.24
+          },
+          {
+            "t": 70.0,
+            "score": 19.93
+          },
+          {
+            "t": 80.0,
+            "score": 18.62
+          },
+          {
+            "t": 84.29,
+            "score": 16.88
+          }
+        ],
+        "components": {
+          "signal": -0.5284,
+          "final_state": -0.599,
+          "trend": -0.4427,
+          "persistence": -1.0,
+          "stability": 0.0,
+          "_stability_raw": 0.675,
+          "text": 0.0322,
+          "prosody": -0.0723
+        },
+        "contributions": {
+          "signal": -8.21,
+          "final_state": -11.17,
+          "trend": -6.88,
+          "persistence": -15.53,
+          "stability": 0.0,
+          "text": 0.2,
+          "prosody": -0.28
+        },
+        "factors": {
+          "positive": [],
+          "negative": [
+            {
+              "key": "persistence",
+              "label": "Persistencia de estados negativos",
+              "points": -15.5
+            },
+            {
+              "key": "final_state",
+              "label": "Estado emocional negativo al final de la llamada",
+              "points": -11.2
+            },
+            {
+              "key": "signal",
+              "label": "Predominio de señales emocionales negativas",
+              "points": -8.2
+            },
+            {
+              "key": "trend",
+              "label": "Tendencia negativa durante la interacción",
+              "points": -6.9
+            }
+          ]
+        },
+        "metrics": {
+          "dominant_emotion": "disgust",
+          "initial_emotion": "disgust",
+          "final_emotion": "fear",
+          "frustration": 0.2609,
+          "tension": 0.4011,
+          "positive": 0.1137,
+          "negative": 0.8148,
+          "stability": 0.675,
+          "mean_probabilities": {
+            "angry": 0.0578,
+            "disgust": 0.3936,
+            "fear": 0.225,
+            "happy": 0.1137,
+            "neutral": 0.0535,
+            "sad": 0.1383,
+            "surprise": 0.0181
+          },
+          "analyzed_seconds": 38.0,
+          "mean_model_confidence": 0.8323
+        },
+        "interpretation": {
+          "key": "very_low",
+          "label": "Muy baja satisfacción"
+        },
+        "mode": "rules",
+        "score_rules": 8.14,
+        "confidence_parts": {
+          "model": 1.0,
+          "coverage": 0.468,
+          "audio_quality": 1.0,
+          "text": 0.974,
+          "language_mismatch": true
+        }
+      }
+    },
+    "interaction": {
+      "score": 52.3,
+      "confidence": 0.502,
+      "trend": "stable",
+      "initial_score": 54.6,
+      "final_score": 56.7,
+      "engine_version": null,
+      "interaction": {
+        "initial": 54.6,
+        "final": 56.7,
+        "variation": 2.1,
+        "message": "Satisfacción estimada estable durante la interacción."
+      }
+    }
+  },
+  "events": [
+    {
+      "id": "b39571de885a49b18221b3c857fcd0c1",
+      "speaker": "SPEAKER_01",
+      "timestamp": 46.5,
+      "end_timestamp": 76.5,
+      "event_type": "negative_ending",
+      "label": "Final negativo",
+      "severity": 0.599,
+      "confidence": 0.7,
+      "emotion": "disgust",
+      "satisfaction": 33.3,
+      "description": "Las señales del tramo final son predominantemente negativas.",
+      "evidence": {}
+    },
+    {
+      "id": "10a9f4e369644865a1cdc4172de3714d",
+      "speaker": "SPEAKER_00",
+      "timestamp": 52.5,
+      "end_timestamp": 82.5,
+      "event_type": "positive_ending",
+      "label": "Final positivo",
+      "severity": 0.914,
+      "confidence": 0.857,
+      "emotion": "happy",
+      "satisfaction": 86.4,
+      "description": "Las señales del tramo final son predominantemente positivas.",
+      "evidence": {
+        "possible_factors": [
+          {
+            "text": "Mi nombre es Juan Pérez y mi teléfono es 555-123-4567. Ya di el número tres veces, es el 4512. Estoy cansado de llamar otra vez.",
+            "start": 27.23,
+            "end": 39.65,
+            "cues": [
+              "frustration"
+            ]
+          },
+          {
+            "text": "Ah, perfecto. Muchas gracias, eso me ayuda bastante. Excelente servicio.",
+            "start": 65.51,
+            "end": 71.11,
+            "cues": [
+              "resolution"
+            ]
+          }
+        ],
+        "note": "Coincidencia temporal; no implica causalidad."
+      }
+    },
+    {
+      "id": "8f8e7aa981f84ca78c2ec8550f3d6d36",
+      "speaker": "SPEAKER_00",
+      "timestamp": 84.29,
+      "end_timestamp": null,
+      "event_type": "recovery",
+      "label": "Recuperación emocional",
+      "severity": 0.346,
+      "confidence": 0.762,
+      "emotion": "happy",
+      "satisfaction": 95.9,
+      "description": "La satisfacción estimada muestra un aumento de 17 puntos respecto al mínimo/máximo reciente.",
+      "evidence": {
+        "possible_factors": [
+          {
+            "text": "Ah, perfecto. Muchas gracias, eso me ayuda bastante. Excelente servicio.",
+            "start": 65.51,
+            "end": 71.11,
+            "cues": [
+              "resolution"
+            ]
+          },
+          {
+            "text": "No, eso es todo. Muchas gracias, que tenga un buen día.",
+            "start": 78.36,
+            "end": 82.54,
+            "cues": [
+              "resolution"
+            ]
+          }
+        ],
+        "note": "Coincidencia temporal; no implica causalidad."
+      }
+    },
+    {
+      "id": "ae701b2ad0a041ce947ab497737de497",
+      "speaker": "SPEAKER_01",
+      "timestamp": 84.29,
+      "end_timestamp": null,
+      "event_type": "deterioration",
+      "label": "Deterioro emocional",
+      "severity": 0.479,
+      "confidence": 0.816,
+      "emotion": "angry",
+      "satisfaction": 16.9,
+      "description": "La satisfacción estimada muestra un descenso de 24 puntos respecto al mínimo/máximo reciente.",
+      "evidence": {}
+    }
+  ],
+  "model": {
+    "id": "674fd4c6a3d648b590abbf0024c11c40",
+    "name": "emotion_baseline_wav2vec",
+    "version": "baseline",
+    "kind": "emotion",
+    "language": "en",
+    "base_model": null,
+    "hf_id": "r-f/wav2vec-english-speech-emotion-recognition"
+  },
+  "confidence": {
+    "analysis_quality": {
+      "score": 93.4,
+      "components": {
+        "audio": 100.0,
+        "speech": 100.0,
+        "segments": 100.0,
+        "model": 80.0,
+        "diarization": 96.0,
+        "transcription": 94.8
+      },
+      "low": false,
+      "note": "Estimación heurística basada en calidad de audio, cobertura y confianza de los modelos; no equivale a la exactitud real."
+    },
+    "audio_quality": {
+      "score": 100.0,
+      "components": {
+        "snr": 1.0,
+        "clipping": 1.0,
+        "level": 1.0,
+        "speech": 1.0,
+        "bandwidth": 1.0
+      },
+      "low": false,
+      "warnings": [],
+      "levels": {
+        "peak_dbfs": -1.94,
+        "rms_dbfs": -26.6,
+        "noise_floor_dbfs": -100.0,
+        "speech_level_dbfs": -21.72,
+        "snr_db": 78.28,
+        "silence_ratio": 0.3892,
+        "clipping_ratio": 0.0,
+        "frame_count": 3371
+      },
+      "speech_ratio": 0.7082,
+      "vad_engine": "silero",
+      "channel_layout": {
+        "is_stereo_split": true,
+        "reason": "un hablante por canal",
+        "correlation": -0.0049,
+        "active_ratio": [
+          0.2759,
+          0.3147
+        ],
+        "overlap_ratio": 0.0
+      }
+    },
+    "speaker_confidence": {
+      "SPEAKER_00": 0.502,
+      "SPEAKER_01": 0.503
+    }
+  },
+  "interaction": {
+    "interruptions": {
+      "SPEAKER_00": 0,
+      "SPEAKER_01": 0
+    },
+    "overlap_seconds": 0,
+    "overlap_events": 0,
+    "long_silences": 0,
+    "long_silence_seconds": 0,
+    "pauses": 14,
+    "talk_time": {
+      "SPEAKER_00": 33.0,
+      "SPEAKER_01": 30.9
+    },
+    "talk_ratio": {
+      "SPEAKER_00": 0.5164,
+      "SPEAKER_01": 0.4836
+    },
+    "speech_rate_wpm": {
+      "SPEAKER_00": 140.0,
+      "SPEAKER_01": 124.3
+    },
+    "turn_count": {
+      "SPEAKER_00": 5,
+      "SPEAKER_01": 10
+    },
+    "silence_events": [],
+    "note": "Señales adicionales; no se interpretan automáticamente como algo negativo."
+  },
+  "config": {
+    "audio": {
+      "normalization": {
+        "sample_rate": 16000,
+        "channels": 1,
+        "loudnorm": true,
+        "target_lufs": -23,
+        "highpass_hz": 60
+      },
+      "accepted_extensions": [
+        "mp3",
+        "wav",
+        "m4a",
+        "aac",
+        "flac",
+        "ogg"
+      ],
+      "max_file_size_mb": 4096,
+      "max_duration_hours": 12,
+      "vad": {
+        "engine": "silero",
+        "threshold": 0.5,
+        "min_speech_ms": 250,
+        "min_silence_ms": 300,
+        "block_seconds": 300,
+        "energy_threshold_db": -42
+      },
+      "channels": {
+        "detect_separation": true,
+        "max_correlation": 0.55,
+        "max_overlap_ratio": 0.3,
+        "min_active_ratio": 0.03
+      },
+      "segmentation": {
+        "window_size": 5.0,
+        "hop_size": 2.5,
+        "min_window": 1.0,
+        "min_turn": 0.6,
+        "merge_gap": 0.8,
+        "batch_size": 16,
+        "checkpoint_every_batches": 4
+      },
+      "quality": {
+        "low_quality_threshold": 60,
+        "silence_ratio_warn": 0.6,
+        "clipping_ratio_warn": 0.005,
+        "min_snr_db": 10,
+        "good_snr_db": 30,
+        "min_speech_ratio": 0.15,
+        "min_sample_rate": 8000,
+        "weights": {
+          "snr": 0.35,
+          "clipping": 0.15,
+          "level": 0.15,
+          "speech": 0.2,
+          "bandwidth": 0.15
+        }
+      },
+      "diarization": {
+        "engine": "auto",
+        "expected_speakers": 2,
+        "max_speakers_probe": 4,
+        "minor_speaker_ratio": 0.05,
+        "pyannote_model": "pyannote/speaker-diarization-3.1",
+        "chunk_minutes": 30,
+        "chunk_overlap_seconds": 15,
+        "match_threshold": 0.55
+      },
+      "transcription": {
+        "engine": "faster-whisper",
+        "model_size": "small",
+        "compute_type": "auto",
+        "language": "auto",
+        "preferred_language": "es",
+        "language_confidence_min": 0.6,
+        "block_seconds": 600,
+        "beam_size": 5,
+        "vad_filter": true
+      },
+      "interruptions": {
+        "min_overlap_seconds": 0.3,
+        "long_silence_seconds": 4.0,
+        "pause_seconds": 1.0
+      },
+      "analysis_quality": {
+        "weights": {
+          "audio": 0.2,
+          "speech": 0.1,
+          "segments": 0.1,
+          "model": 0.25,
+          "diarization": 0.2,
+          "transcription": 0.15
+        },
+        "low_threshold": 60,
+        "language_mismatch_penalty": 0.8
+      }
+    },
+    "emotion": {
+      "default_model": {
+        "name": "emotion_baseline_wav2vec",
+        "loader": "wav2vec",
+        "hf_id": "r-f/wav2vec-english-speech-emotion-recognition",
+        "language": "en"
+      },
+      "canonical_emotions": [
+        "angry",
+        "disgust",
+        "fear",
+        "happy",
+        "neutral",
+        "sad",
+        "surprise"
+      ],
+      "device": "auto",
+      "fp16_on_cuda": true,
+      "max_window_seconds": 30,
+      "temperature": 1.0,
+      "cache_predictions": true,
+      "confidence_levels": {
+        "high": 0.75,
+        "medium": 0.5
+      },
+      "signals": {
+        "frustration_emotions": {
+          "angry": 1.0,
+          "disgust": 0.7,
+          "sad": 0.25,
+          "fear": 0.15
+        },
+        "tension_emotions": {
+          "angry": 1.0,
+          "fear": 0.6,
+          "disgust": 0.4,
+          "surprise": 0.2
+        },
+        "positive_emotions": [
+          "happy"
+        ],
+        "negative_emotions": [
+          "angry",
+          "disgust",
+          "fear",
+          "sad"
+        ]
+      },
+      "fusion": {
+        "audio_weight": 1.0,
+        "prosody_weight": 0.35,
+        "text_weight": 0.5
+      },
+      "text_sentiment": {
+        "engine": "lexicon",
+        "hf_model": "cardiffnlp/twitter-xlm-roberta-base-sentiment",
+        "cues_window_seconds": 20
+      },
+      "prosody": {
+        "enabled": true,
+        "f0_min": 65,
+        "f0_max": 500,
+        "frame_ms": 32
+      }
+    },
+    "satisfaction": {
+      "mode": "rules",
+      "hybrid_alpha": 0.5,
+      "weights": {
+        "happy_weight": 1.0,
+        "neutral_weight": 0.2,
+        "angry_weight": -1.0,
+        "sad_weight": -0.6,
+        "fear_weight": -0.5,
+        "disgust_weight": -0.9,
+        "surprise_weight": 0.1,
+        "other_weight": 0.0,
+        "signal_weight": 1.0,
+        "final_state_weight": 1.2,
+        "trend_weight": 1.0,
+        "persistence_weight": 1.0,
+        "stability_weight": 0.3,
+        "text_weight": 0.4,
+        "prosody_weight": 0.25,
+        "intensity_gain": 0.5
+      },
+      "score": {
+        "base": 50,
+        "scale": 50,
+        "sensitivity": 1.6
+      },
+      "final_segment": {
+        "fraction": 0.2,
+        "min_seconds": 30,
+        "max_seconds": 300
+      },
+      "persistence": {
+        "negative_valence_threshold": -0.25,
+        "positive_valence_threshold": 0.25,
+        "min_run_seconds": 10
+      },
+      "trend": {
+        "smoothing_seconds": 30,
+        "gain": 1.5,
+        "stable_delta": 6
+      },
+      "timeline": {
+        "step_seconds": 10,
+        "window_seconds": 60,
+        "smoothing_alpha": 0.35
+      },
+      "interpretation": [
+        {
+          "min": 0,
+          "max": 20,
+          "key": "very_low",
+          "label": "Muy baja satisfacción"
+        },
+        {
+          "min": 21,
+          "max": 40,
+          "key": "low",
+          "label": "Baja satisfacción"
+        },
+        {
+          "min": 41,
+          "max": 60,
+          "key": "neutral",
+          "label": "Neutral"
+        },
+        {
+          "min": 61,
+          "max": 80,
+          "key": "good",
+          "label": "Buena satisfacción"
+        },
+        {
+          "min": 81,
+          "max": 100,
+          "key": "high",
+          "label": "Alta satisfacción"
+        }
+      ],
+      "confidence": {
+        "min_analyzed_seconds": 20,
+        "full_confidence_seconds": 180,
+        "weights": {
+          "model": 0.45,
+          "coverage": 0.3,
+          "audio_quality": 0.15,
+          "text": 0.1
+        },
+        "language_mismatch_penalty": 0.6
+      },
+      "events": {
+        "min_separation_seconds": 45,
+        "frustration_threshold": 0.55,
+        "anger_threshold": 0.6,
+        "positive_threshold": 0.6,
+        "shift_valence_delta": 0.45,
+        "shift_window_seconds": 30,
+        "satisfaction_jump": 15,
+        "jump_window_seconds": 30,
+        "recovery_delta": 15,
+        "deterioration_delta": 15,
+        "conflict_threshold": 0.45,
+        "ending_threshold": 0.2,
+        "min_event_confidence": 0.35
+      },
+      "calibration": {
+        "enabled": false,
+        "min_samples": 30,
+        "coefficients": {
+          "a": 1.0,
+          "b": 0.0
+        }
+      }
+    },
+    "app": {
+      "general": {
+        "app_name": "Analizador de Llamadas IA",
+        "default_language": "es",
+        "supported_languages": [
+          "es",
+          "en"
+        ],
+        "roles_labels": {
+          "client": "Cliente",
+          "agent": "Agente",
+          "user": "Usuario",
+          "advisor": "Asesor",
+          "other": "Otro"
+        }
+      },
+      "privacy": {
+        "retention_days": 0,
+        "default_allow_training": false,
+        "anonymize_transcripts": false,
+        "redact_exports_by_default": false,
+        "pii_entities": [
+          "PERSON",
+          "PHONE",
+          "EMAIL",
+          "ID",
+          "ADDRESS",
+          "ACCOUNT"
+        ],
+        "encrypt_at_rest": false
+      },
+      "storage": {
+        "backend": "local",
+        "keep_original": true,
+        "keep_normalized": true,
+        "temp_cleanup": true
+      },
+      "training": {
+        "defaults": {
+          "learning_rate": 3e-05,
+          "batch_size": 8,
+          "epochs": 10,
+          "validation_split": 0.15,
+          "test_split": 0.15,
+          "weight_decay": 0.01,
+          "warmup_steps": 50,
+          "gradient_accumulation": 2,
+          "early_stopping_patience": 3,
+          "freeze_feature_encoder": true,
+          "imbalance_strategy": "class_weights",
+          "augmentation": {
+            "enabled": false,
+            "noise_snr_db": [
+              20,
+              35
+            ],
+            "gain_db": [
+              -6,
+              6
+            ],
+            "time_mask_seconds": 0.2,
+            "speed_range": [
+              0.95,
+              1.05
+            ],
+            "pitch_semitones": 0.0
+          },
+          "seed": 42
+        },
+        "imbalance_alert_ratio": 0.5,
+        "min_sample_seconds": 0.5,
+        "max_sample_seconds": 30
+      },
+      "ui": {
+        "default_theme": "system"
+      }
+    }
+  },
+  "redacted": false,
+  "exported_at": "2026-09-19T22:50:14.151206+00:00",
+  "notice": "Estimaciones de un modelo; no constituyen afirmaciones definitivas. Separe los datos observados (probabilidades, tiempos, transcripción) de la interpretación (satisfacción, eventos)."
+}

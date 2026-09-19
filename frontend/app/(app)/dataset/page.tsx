@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, downloadUrl } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
+import { DEMO } from "@/lib/demo";
 import { Badge, Button, Card, Empty, Field, Modal, Notice, Pagination, Skeleton, Stat } from "@/components/ui";
 import { EMO_ES, emoColor, mmss } from "@/lib/format";
 
@@ -148,7 +149,7 @@ export default function DatasetPage() {
                     <td className="px-3 py-2 tabular-nums">{s.satisfaction ?? "—"}</td><td className="px-3 py-2 tabular-nums">{s.duration ?? "—"}s</td>
                     <td className="px-3 py-2">{s.split || "—"}</td>
                     <td className="px-3 py-2">{s.validation?.issues?.length ? s.validation.issues.map((i: string) => <Badge key={i} tone="warn" className="mr-1">{i}</Badge>) : <Badge tone="good">ok</Badge>}</td>
-                    <td className="px-3 py-2 text-right"><audio controls preload="none" className="hidden h-7 sm:inline-block" src={`/api/v1/datasets/${ds.id}/samples/${s.id}/audio`} />{can("ANALYST") && !ds.frozen && <Button size="sm" variant="danger" onClick={() => run("del", () => api(`/datasets/${ds.id}/samples/${s.id}`, { method: "DELETE" }), "Muestra eliminada")}>✕</Button>}</td>
+                    <td className="px-3 py-2 text-right">{!DEMO && <audio controls preload="none" className="hidden h-7 sm:inline-block" src={`/api/v1/datasets/${ds.id}/samples/${s.id}/audio`} />}{can("ANALYST") && !ds.frozen && <Button size="sm" variant="danger" onClick={() => run("del", () => api(`/datasets/${ds.id}/samples/${s.id}`, { method: "DELETE" }), "Muestra eliminada")}>✕</Button>}</td>
                   </tr>))}
               </tbody>
             </table>

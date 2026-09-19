@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { api } from "@/lib/api";
+import { api, audioUrl } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { PlayerProvider, usePlayer } from "@/lib/player";
 import AudioPlayer from "@/components/call/AudioPlayer";
@@ -120,7 +120,7 @@ export default function Labeling() {
       {calls && calls.length === 0 && <Card><Empty title="No hay llamadas analizadas" text="Analice una llamada primero para poder etiquetar sus segmentos." /></Card>}
       {datasets.length === 0 && <Notice tone="info">Aún no tiene datasets. Cree uno en la sección «Dataset».</Notice>}
       {sel && !call && <Skeleton className="h-96" />}
-      {call && <PlayerProvider key={call.id} src={`/api/v1/calls/${call.id}/audio`}><Labeler call={call} datasets={datasets} labels={labels} onLabels={setLabels} /></PlayerProvider>}
+      {call && <PlayerProvider key={call.id} src={audioUrl(call.id)}><Labeler call={call} datasets={datasets} labels={labels} onLabels={setLabels} /></PlayerProvider>}
     </div>
   );
 }
