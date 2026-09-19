@@ -1,0 +1,33 @@
+# Secretos / entorno
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Datos generados en ejecución (modelos descargados, BD, audios subidos, caché, logs, modelos entrenados)
+backend/data/
+data/
+
+# Node / Next.js
+node_modules/
+.next/
+next-env.d.ts
+*.tsbuildinfo
+
+# Logs y salidas locales de pruebas
+docs/*.log
+docs/npm_install.txt
+docs/live_*.log
+docs/bench_stereo.*
+docs/test_*_output.txt
+
+# SO / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

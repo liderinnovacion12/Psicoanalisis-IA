@@ -1,0 +1,76 @@
+{
+  "note": "Voz sintética (TTS). Cliente = SPEAKER_00 (canal izq.), Agente = SPEAKER_01 (canal der.).",
+  "duration": 84.29,
+  "turns": [
+    {
+      "speaker": "SPEAKER_01",
+      "role": "agent",
+      "start": 0.3,
+      "end": 9.42,
+      "text": "Buenos días, gracias por comunicarse con atención al cliente. ¿En qué puedo ayudarle?"
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "role": "client",
+      "start": 9.92,
+      "end": 16.48,
+      "text": "Hola, llevo tres días esperando una solución y nadie me ayuda. Estoy muy molesto con el servicio."
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "role": "agent",
+      "start": 17.08,
+      "end": 26.71,
+      "text": "Entiendo la situación, permítame ayudarle. ¿Me puede indicar su nombre y su número de pedido?"
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "role": "client",
+      "start": 27.21,
+      "end": 40.43,
+      "text": "Mi nombre es Juan Pérez y mi teléfono es 555 123 4567. Ya di el número tres veces, es el cuarenta y cinco doce. Estoy cansado de llamar otra vez."
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "role": "agent",
+      "start": 41.13,
+      "end": 49.97,
+      "text": "Lamento mucho el inconveniente. Ya estoy revisando su caso y veo cuál fue el problema."
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "role": "client",
+      "start": 50.37,
+      "end": 55.32,
+      "text": "Bueno, espero que ahora sí lo puedan resolver, porque esto es inaceptable."
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "role": "agent",
+      "start": 56.22,
+      "end": 64.81,
+      "text": "Ya lo solucioné. Su pedido saldrá hoy mismo y recibirá un correo de confirmación."
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "role": "client",
+      "start": 65.41,
+      "end": 72.11,
+      "text": "Ah, perfecto. Muchas gracias, eso me ayuda bastante. Excelente servicio."
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "role": "agent",
+      "start": 72.61,
+      "end": 77.86,
+      "text": "Con gusto. ¿Puedo ayudarle en algo más?"
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "role": "client",
+      "start": 78.36,
+      "end": 83.29,
+      "text": "No, eso es todo. Muchas gracias, que tenga un buen día."
+    }
+  ]
+}

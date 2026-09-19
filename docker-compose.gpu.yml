@@ -1,0 +1,23 @@
+# Override para GPU NVIDIA (requiere NVIDIA Container Toolkit).
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build
+# Compila la imagen con PyTorch CUDA y reserva la GPU para los workers de ML.
+x-gpu: &gpu
+  build:
+    context: ./backend
+    args:
+      TORCH_INDEX: https://download.pytorch.org/whl/cu124
+  environment:
+    DEVICE: cuda
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: 1
+            capabilities: [gpu]
+
+services:
+  worker-diarization: *gpu
+  worker-transcription: *gpu
+  worker-emotion: *gpu
+  worker-training: *gpu

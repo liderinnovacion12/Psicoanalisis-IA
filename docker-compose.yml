@@ -1,0 +1,110 @@
+# Analizador de Llamadas IA — despliegue completo.
+#   cp .env.example .env   (edite SECRET_KEY, contraseñas y HF_TOKEN)
+#   docker compose up -d --build
+#   GPU NVIDIA: docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build
+#   Con MinIO (S3 local):  docker compose --profile minio up -d   y  STORAGE_BACKEND=s3 en .env
+#
+# Escalado: cada etapa tiene su propio worker/cola. Ejemplo:  docker compose up -d --scale worker-emotion=3
+# NOTA de despliegue multi-servidor: los workers comparten la carpeta de trabajo /data/work (audio normalizado por llamada);
+# use un volumen compartido (NFS/EFS) y STORAGE_BACKEND=s3 para los originales.
+
+x-backend: &backend
+  build:
+    context: ./backend
+    args:
+      TORCH_INDEX: ${TORCH_INDEX:-https://download.pytorch.org/whl/cpu}
+  env_file: .env
+  environment: &env
+    DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-callan}:${POSTGRES_PASSWORD:-callan}@postgres:5432/${POSTGRES_DB:-callan}
+    REDIS_URL: redis://redis:6379/0
+    TASK_MODE: celery
+    DATA_DIR: /data
+    UPLOAD_DIR: /data/uploads
+    REPORT_DIR: /data/reports
+    MODELS_DIR: /data/models
+    TEMP_DIR: /data/tmp
+    CACHE_DIR: /data/cache
+    MODEL_CACHE_DIR: /data/model_cache
+  volumes:
+    - appdata:/data
+  depends_on:
+    postgres: { condition: service_healthy }
+    redis: { condition: service_healthy }
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-callan}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-callan}
+      POSTGRES_DB: ${POSTGRES_DB:-callan}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-callan}"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    profiles: ["minio"]
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+    volumes: [miniodata:/data]
+    ports: ["9000:9000", "9001:9001"]
+
+  backend:
+    <<: *backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+    ports: ["8000:8000"]
+
+  # ---- workers: uno por etapa (escalables de forma independiente) ----
+  worker-audio:
+    <<: *backend
+    command: celery -A app.workers.celery_app worker -Q audio -c 2 -n audio@%h --loglevel=INFO
+  worker-diarization:
+    <<: *backend
+    command: celery -A app.workers.celery_app worker -Q diarization -c 1 -n diar@%h --loglevel=INFO
+  worker-transcription:
+    <<: *backend
+    command: celery -A app.workers.celery_app worker -Q transcription -c 1 -n trans@%h --loglevel=INFO
+  worker-emotion:
+    <<: *backend
+    command: celery -A app.workers.celery_app worker -Q emotion -c 1 -n emo@%h --loglevel=INFO
+  worker-satisfaction:
+    <<: *backend
+    command: celery -A app.workers.celery_app worker -Q satisfaction -c 2 -n sat@%h --loglevel=INFO
+  worker-training:
+    <<: *backend
+    command: celery -A app.workers.celery_app worker -Q training -c 1 -n train@%h --loglevel=INFO
+  beat:
+    <<: *backend
+    command: celery -A app.workers.celery_app beat --loglevel=INFO
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        BACKEND_URL: http://backend:8000
+    ports: ["3000:3000"]
+    depends_on: [backend]
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+  appdata:
+  miniodata:

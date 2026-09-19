@@ -1,0 +1,77 @@
+# Configuración de audio y pipeline de procesamiento. Todos los valores pueden
+# sobrescribirse por organización desde Configuración > Audio (tabla `settings`).
+normalization:
+  sample_rate: 16000          # requerido por wav2vec2 / whisper
+  channels: 1
+  loudnorm: true              # normalización de volumen (ffmpeg loudnorm, una pasada)
+  target_lufs: -23
+  highpass_hz: 60             # elimina ruido de baja frecuencia
+
+accepted_extensions: [mp3, wav, m4a, aac, flac, ogg]
+max_file_size_mb: 4096
+max_duration_hours: 12
+
+vad:
+  engine: silero              # silero | energy
+  threshold: 0.5
+  min_speech_ms: 250
+  min_silence_ms: 300
+  block_seconds: 300          # bloques de lectura (no se carga todo el audio)
+  energy_threshold_db: -42    # solo motor `energy`
+
+channels:                     # detección de audio estéreo con un hablante por canal
+  detect_separation: true
+  max_correlation: 0.55       # correlación entre canales por encima => mezcla / dual-mono
+  max_overlap_ratio: 0.30     # actividad simultánea / actividad del canal menos activo
+  min_active_ratio: 0.03      # cada canal debe tener al menos este % de voz
+
+segmentation:
+  window_size: 5.0            # segundos
+  hop_size: 2.5               # segundos
+  min_window: 1.0             # ventanas más cortas se descartan salvo turnos únicos
+  min_turn: 0.6               # turnos más cortos se ignoran para emociones
+  merge_gap: 0.8              # une turnos del mismo hablante separados por menos de esto
+  batch_size: 16
+  checkpoint_every_batches: 4
+
+quality:
+  # Penalizaciones (puntos) usadas por el score de calidad de audio 0-100
+  low_quality_threshold: 60
+  silence_ratio_warn: 0.6
+  clipping_ratio_warn: 0.005
+  min_snr_db: 10
+  good_snr_db: 30
+  min_speech_ratio: 0.15
+  min_sample_rate: 8000
+  weights: {snr: 0.35, clipping: 0.15, level: 0.15, speech: 0.20, bandwidth: 0.15}
+
+diarization:
+  engine: auto                # auto | pyannote | channels | spectral
+  expected_speakers: 2
+  max_speakers_probe: 4       # pyannote puede detectar hasta N para poder avisar
+  minor_speaker_ratio: 0.05   # voces con < 5 % del habla se reasignan
+  pyannote_model: pyannote/speaker-diarization-3.1
+  chunk_minutes: 30
+  chunk_overlap_seconds: 15
+  match_threshold: 0.55       # distancia coseno máx. para reconciliar hablantes entre chunks
+
+transcription:
+  engine: faster-whisper      # faster-whisper | whisperx
+  model_size: small           # tiny | base | small | medium | large-v3
+  compute_type: auto          # auto | int8 | float16 | float32
+  language: auto              # auto | es | en | ...
+  preferred_language: es      # si la detección es dudosa se prioriza este idioma
+  language_confidence_min: 0.60
+  block_seconds: 600
+  beam_size: 5
+  vad_filter: true
+
+interruptions:
+  min_overlap_seconds: 0.3
+  long_silence_seconds: 4.0
+  pause_seconds: 1.0
+
+analysis_quality:                # ANALYSIS QUALITY SCORE (0-100): media ponderada de estos componentes
+  weights: {audio: 0.20, speech: 0.10, segments: 0.10, model: 0.25, diarization: 0.20, transcription: 0.15}
+  low_threshold: 60
+  language_mismatch_penalty: 0.8   # factor sobre el componente 'model' si el idioma de la llamada difiere del del modelo

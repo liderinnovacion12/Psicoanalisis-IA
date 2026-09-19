@@ -1,0 +1,42 @@
+# Configuración del reconocimiento de emociones (ML).
+default_model:
+  name: emotion_baseline_wav2vec
+  loader: wav2vec                       # wav2vec | finetuned  (ver ml/emotion/factory.py)
+  hf_id: r-f/wav2vec-english-speech-emotion-recognition
+  language: en                          # el baseline es inglés: NO asumir igual rendimiento en español
+
+canonical_emotions: [angry, disgust, fear, happy, neutral, sad, surprise]
+
+device: auto                            # auto | cuda | cpu
+fp16_on_cuda: true
+max_window_seconds: 30                  # ventana máxima segura por inferencia
+temperature: 1.0                        # temperature scaling de los logits (>1 suaviza; el baseline suele ser sobreconfiado)
+cache_predictions: true
+
+confidence_levels:                      # etiqueta cualitativa de "Confianza del modelo"
+  high: 0.75
+  medium: 0.50
+
+# Umbrales de señales derivadas por segmento
+signals:
+  frustration_emotions: {angry: 1.0, disgust: 0.7, sad: 0.25, fear: 0.15}
+  tension_emotions: {angry: 1.0, fear: 0.6, disgust: 0.4, surprise: 0.2}
+  positive_emotions: [happy]
+  negative_emotions: [angry, disgust, fear, sad]
+
+# Fusión multimodal (pesos relativos; texto y prosodia solo suman si están disponibles)
+fusion:
+  audio_weight: 1.0
+  prosody_weight: 0.35
+  text_weight: 0.5
+
+text_sentiment:
+  engine: lexicon                       # lexicon | hf
+  hf_model: cardiffnlp/twitter-xlm-roberta-base-sentiment
+  cues_window_seconds: 20               # ventana para asociar frases a picos emocionales
+
+prosody:
+  enabled: true
+  f0_min: 65
+  f0_max: 500
+  frame_ms: 32

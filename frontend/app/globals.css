@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: 246 248 250; --surface: 255 255 255; --surface2: 241 245 249; --line: 226 232 240;
+  --ink: 15 23 42; --muted: 100 116 139; --brand: 14 124 134; --brand2: 31 58 95;
+  --good: 34 150 90; --warn: 214 145 30; --bad: 208 65 65;
+}
+.dark {
+  --bg: 11 15 20; --surface: 20 26 34; --surface2: 28 36 46; --line: 42 52 65;
+  --ink: 232 237 243; --muted: 139 152 168; --brand: 45 184 196; --brand2: 120 160 210;
+  --good: 62 201 130; --warn: 240 176 70; --bad: 240 100 100;
+}
+html, body { background: rgb(var(--bg)); color: rgb(var(--ink)); }
+body { font-feature-settings: "cv11", "ss01"; -webkit-font-smoothing: antialiased; }
+* { scrollbar-width: thin; scrollbar-color: rgb(var(--line)) transparent; }
+.skeleton { @apply animate-pulse rounded-md bg-surface2; }
+input, select, textarea { @apply rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20; }
+input[type="range"] { @apply p-0 accent-[rgb(var(--brand))]; }
+input[type="checkbox"] { @apply h-4 w-4 p-0 accent-[rgb(var(--brand))]; }

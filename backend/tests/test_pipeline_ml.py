@@ -1,0 +1,180 @@
+"""Pruebas del pipeline con modelos REALES (Whisper + wav2vec baseline). Ejecutar con RUN_ML_TESTS=1.
+
+La llamada de ejemplo es voz sintética (TTS): valida la mecánica de extremo a extremo (audio, diarización,
+transcripción, PII, emociones, satisfacción, eventos, exportación), NO la calidad del reconocimiento emocional.
+"""
+import io
+import json
+import time
+import zipfile
+
+import pytest
+
+from tests.conftest import EXAMPLES, make_tiny_emotion_model
+
+pytestmark = [pytest.mark.ml, pytest.mark.skipif(not (EXAMPLES / "llamada_ejemplo_estereo.wav").exists(), reason="falta la llamada de ejemplo")]
+API = "/api/v1"
+
+
+def wait_completed(client, headers, cid, timeout=900):
+    t0 = time.time()
+    while time.time() - t0 < timeout:
+        st = client.get(f"{API}/calls/{cid}/status", headers=headers).json()
+        if st["status"] in ("COMPLETED", "ERROR"):
+            return st
+        time.sleep(3)
+    raise TimeoutError("la llamada no terminó a tiempo")
+
+
+@pytest.fixture(scope="module")
+def completed_call(client, admin_a):
+    with open(EXAMPLES / "llamada_ejemplo_estereo.wav", "rb") as f:
+        r = client.post(f"{API}/calls/upload", headers=admin_a, files={"file": ("llamada_ejemplo_estereo.wav", f)})
+    assert r.status_code == 201, r.text
+    cid = r.json()["id"]
+    st = wait_completed(client, admin_a, cid)
+    assert st["status"] == "COMPLETED", st
+    return cid
+
+
+def test_end_to_end_results(client, admin_a, completed_call):
+    cid = completed_call
+    call = client.get(f"{API}/calls/{cid}", headers=admin_a).json()
+    assert call["diarization_mode"] == "channels" and call["language"] == "es" and len(call["speakers"]) == 2
+    assert call["allow_training"] is False and call["model_version"].startswith("emotion_baseline_wav2vec")
+    assert call["audio_quality"] is not None and call["analysis_quality"] is not None
+    assert any("entrenado para 'en'" in w for w in call["warnings"])              # aviso de idioma del baseline
+
+    tr = client.get(f"{API}/calls/{cid}/transcription", headers=admin_a).json()["items"]
+    text = " ".join(t["text"] for t in tr).lower()
+    assert "molesto" in text and "gracias" in text
+    assert {t["speaker"] for t in tr} == {"SPEAKER_00", "SPEAKER_01"}
+    assert all({"start", "end", "confidence"} <= set(t) and t["end"] > t["start"] for t in tr)
+    red = client.get(f"{API}/calls/{cid}/transcription", headers=admin_a, params={"redact": True}).json()["items"]
+    joined = " ".join(t["text"] for t in red)
+    assert "[PERSONA]" in joined and "[TELEFONO]" in joined and "Juan" not in joined
+
+    emo = client.get(f"{API}/calls/{cid}/emotions", headers=admin_a).json()["items"]
+    assert len(emo) > 10
+    for e in emo:
+        assert set(e["probabilities"]) == {"angry", "disgust", "fear", "happy", "neutral", "sad", "surprise"}
+        assert abs(sum(e["probabilities"].values()) - 1) < 1e-3 and e["model"] and e["model_version"] and e["duration"] > 0
+    assert emo[0]["start"] <= emo[1]["start"]
+
+    sat = client.get(f"{API}/calls/{cid}/satisfaction", headers=admin_a).json()
+    assert set(sat["speakers"]) == {"SPEAKER_00", "SPEAKER_01"} and sat["interaction"]
+    for s in sat["speakers"].values():
+        assert 0 <= s["score"] <= 100 and 0 <= s["confidence"] <= 1 and s["timeline"] and s["factors"] is not None
+    ev = client.get(f"{API}/calls/{cid}/events", headers=admin_a).json()
+    assert all({"timestamp", "event_type", "confidence", "label"} <= set(e) for e in ev)
+    assert call["interaction"]["talk_time"]["SPEAKER_00"] > 5
+
+
+def test_exports_and_pdf(client, admin_a, completed_call):
+    cid = completed_call
+    csv = client.get(f"{API}/calls/{cid}/export", headers=admin_a, params={"format": "csv"})
+    header = csv.content.decode("utf-8-sig").splitlines()[0].split(",")
+    assert header[:11] == ["call_id", "speaker", "start", "end", "angry", "disgust", "fear", "happy", "neutral", "sad", "surprise"]
+    assert "satisfaction" in header
+    js = client.get(f"{API}/calls/{cid}/export", headers=admin_a, params={"format": "json"}).json()
+    assert {"call", "speakers", "segments", "transcription", "emotions", "satisfaction", "events", "model", "confidence"} <= set(js)
+    from openpyxl import load_workbook
+    wb = load_workbook(io.BytesIO(client.get(f"{API}/calls/{cid}/export", headers=admin_a, params={"format": "xlsx"}).content))
+    assert {"Resumen", "Emociones", "Transcripción", "Eventos"} <= set(wb.sheetnames)
+    pdf = client.get(f"{API}/reports/{cid}", headers=admin_a)
+    assert pdf.status_code == 200 and pdf.content[:4] == b"%PDF" and len(pdf.content) > 20_000
+    red = client.get(f"{API}/calls/{cid}/export", headers=admin_a, params={"format": "json", "redact": True}).json()
+    assert "Juan" not in json.dumps(red["transcription"], ensure_ascii=False)
+
+
+def test_audio_playback_range(client, admin_a, completed_call):
+    r = client.get(f"{API}/calls/{completed_call}/audio", headers={**admin_a, "Range": "bytes=100-299"})
+    assert r.status_code == 206 and r.headers["content-type"] == "audio/mpeg" and len(r.content) == 200
+
+
+def test_mono_diarization_fallback_vs_ground_truth(tmp_path):
+    """Mide la calidad REAL del diarizador de respaldo (sin pyannote) sobre el audio mono con verdad conocida."""
+    import numpy as np
+    from app.core.config import get_config_store
+    from app.ml.audio.processing import load_vad, process_audio
+    from app.ml.diarization.spectral import SpectralDiarizer
+    cfg = get_config_store().defaults("audio")
+    res = process_audio(EXAMPLES / "llamada_ejemplo_mono.wav", tmp_path, cfg)
+    assert res["mode"] == "mono"
+    d = SpectralDiarizer().diarize(tmp_path, res["files"], load_vad(tmp_path), cfg)
+    truth = json.loads((EXAMPLES / "llamada_ejemplo_verdad.json").read_text(encoding="utf-8"))["turns"]
+    grid = np.arange(0, res["duration"], 0.1)
+
+    def lab(turns, key):
+        out = np.full(len(grid), -1)
+        for t in turns:
+            s, e, sp = (t["start"], t["end"], t["speaker"]) if isinstance(t, dict) else (t.start, t.end, t.speaker)
+            out[(grid >= s) & (grid < e)] = int(sp[-1])
+        return out
+    gt, pr = lab(truth, "t"), lab(d.turns, "p")
+    m = (gt >= 0) & (pr >= 0)
+    acc = max((gt[m] == pr[m]).mean(), (gt[m] != pr[m]).mean())                 # mejor asignación de etiquetas
+    print(f"diarización de respaldo: acierto por trama = {acc:.2%}, calidad reportada = {d.quality}")
+    assert d.quality <= 60 and d.warnings                                       # nunca se presenta como diarización de alta calidad
+    assert acc > 0.7
+
+
+def test_resume_from_checkpoint_after_failure(client, monkeypatch):
+    """Si falla la etapa de emociones a mitad, al reanudar NO se repiten audio/diarización/transcripción ni se duplican predicciones."""
+    from sqlalchemy import func, select
+    from app.database.base import SessionLocal
+    from app.ml.training.versioning import register_model
+    from app.models import AudioSegment, Call, EmotionPrediction, Organization, Role, User
+    from app.services import config_service
+    from app.services.call_service import create_call_from_upload
+    from app.workers import pipeline
+    from app.workers.pipeline import run_pipeline, run_stage
+
+    import tempfile, pathlib
+    tiny = make_tiny_emotion_model(pathlib.Path(tempfile.mkdtemp()) / "tiny")
+    db = SessionLocal()
+    org = Organization(name="Org Resume")
+    db.add(org); db.flush()
+    user = User(org_id=org.id, email="r@acme-r.com", hashed_password="x", role=Role.ADMIN.value)
+    db.add(user); db.flush()
+    m = register_model(db, org_id=org.id, kind="emotion", loader="finetuned", path=str(tiny), base_model=None, dataset_id=None,
+                       params={}, labels=["angry", "happy", "neutral", "sad"], language="es", created_by=user.id, status="PRODUCTION")
+    config_service.set_section(db, org.id, "audio", {"segmentation": {"batch_size": 4}}, user.id)
+    db.commit()
+    with open(EXAMPLES / "llamada_ejemplo_estereo.wav", "rb") as f:
+        call = create_call_from_upload(db, user, "resume.wav", f, allow_training=False, display_name=None)
+    cid = call.id
+    for st in ("audio_processing", "diarization", "transcription"):
+        assert run_stage(cid, st)
+    db.expire_all()
+    audio_ts = db.get(Call, cid).checkpoints["audio_processing"]["updated_at"]
+
+    orig = pipeline.iter_window_results
+
+    def flaky(*a, **k):
+        for i, batch in enumerate(orig(*a, **k)):
+            if i == 2:
+                raise RuntimeError("fallo simulado a mitad de la etapa")
+            yield batch
+    monkeypatch.setattr(pipeline, "iter_window_results", flaky)
+    assert run_stage(cid, "emotion_analysis") is False
+    db.expire_all()
+    c = db.get(Call, cid)
+    assert c.status == "ERROR" and c.checkpoints["emotion_analysis"]["status"] == "FAILED"
+    done = c.checkpoints["emotion_analysis"]["done"]
+    assert done == 8 and c.checkpoints["transcription"]["status"] == "COMPLETED"    # 2 lotes de 4 persistidos
+    n_before = db.scalar(select(func.count()).select_from(EmotionPrediction).where(EmotionPrediction.call_id == cid))
+    assert 0 < n_before <= 8
+    from app.services.serializers import user_error_message
+    assert "RuntimeError" not in user_error_message(c) and "fallo simulado" not in user_error_message(c)
+
+    monkeypatch.setattr(pipeline, "iter_window_results", orig)
+    assert run_pipeline(cid) is True
+    db.expire_all()
+    c = db.get(Call, cid)
+    assert c.status == "COMPLETED" and c.checkpoints["audio_processing"]["updated_at"] == audio_ts   # audio no se reprocesó
+    rows = db.execute(select(EmotionPrediction.speaker_id, EmotionPrediction.start)).all()
+    mine = db.execute(select(EmotionPrediction.speaker_id, EmotionPrediction.start).where(EmotionPrediction.call_id == cid)).all()
+    assert len(mine) == len(set(mine)) and len(mine) == c.checkpoints["emotion_analysis"]["valid"] > n_before   # sin duplicados
+    assert c.model_id == m.id
+    db.close()

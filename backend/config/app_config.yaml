@@ -1,0 +1,42 @@
+# Configuración general, privacidad, almacenamiento y entrenamiento.
+general:
+  app_name: Analizador de Llamadas IA
+  default_language: es
+  supported_languages: [es, en]
+  roles_labels: {client: Cliente, agent: Agente, user: Usuario, advisor: Asesor, other: Otro}
+
+privacy:
+  retention_days: 0                    # 0 = no borrar automáticamente
+  default_allow_training: false        # DEBE permanecer false salvo decisión explícita
+  anonymize_transcripts: false         # guardar además la versión redactada (PII)
+  redact_exports_by_default: false
+  pii_entities: [PERSON, PHONE, EMAIL, ID, ADDRESS, ACCOUNT]
+  encrypt_at_rest: false               # cifrado AES-256-GCM de audio almacenado (ver SECRET_KEY / ENCRYPTION_KEY)
+
+storage:
+  backend: local                       # local | s3 (MinIO/S3/Azure compat.)
+  keep_original: true
+  keep_normalized: true                # necesario para re-análisis y etiquetado
+  temp_cleanup: true
+
+training:
+  defaults:
+    learning_rate: 3.0e-5
+    batch_size: 8
+    epochs: 10
+    validation_split: 0.15
+    test_split: 0.15
+    weight_decay: 0.01
+    warmup_steps: 50
+    gradient_accumulation: 2
+    early_stopping_patience: 3
+    freeze_feature_encoder: true
+    imbalance_strategy: class_weights  # none | class_weights | oversample
+    augmentation: {enabled: false, noise_snr_db: [20, 35], gain_db: [-6, 6], time_mask_seconds: 0.2, speed_range: [0.95, 1.05], pitch_semitones: 0.0}
+    seed: 42
+  imbalance_alert_ratio: 0.5           # una clase con > 50 % de las muestras => alerta
+  min_sample_seconds: 0.5
+  max_sample_seconds: 30
+
+ui:
+  default_theme: system

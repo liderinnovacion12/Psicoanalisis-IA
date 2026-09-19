@@ -1,0 +1,6 @@
+audio,speaker,emotion,satisfaction,start,end,language,speaker_group
+audio/llamada_001.wav,SPEAKER_00,angry,25,00:01:23,00:01:29,es,cliente_0001
+audio/llamada_001.wav,SPEAKER_00,neutral,55,00:03:10,00:03:16,es,cliente_0001
+audio/llamada_001.wav,SPEAKER_01,neutral,,00:00:05,00:00:12,es,agente_0007
+audio/llamada_002.wav,SPEAKER_00,happy,90,00:06:41,00:06:47,es,cliente_0002
+audio/llamada_002.wav,SPEAKER_00,sad,35,00:02:02,00:02:09,es,cliente_0002

@@ -1,0 +1,82 @@
+# Satisfaction Engine. NINGÚN peso está en el código: todo se lee de aquí (o del override
+# por organización). El score 0-100 NO es "happy = satisfecho": combina señal emocional,
+# evolución, persistencia, estado final, estabilidad y contexto textual.
+mode: rules                    # rules | model | hybrid
+hybrid_alpha: 0.5              # peso del modelo entrenado en `hybrid`
+
+weights:
+  happy_weight: 1.0
+  neutral_weight: 0.2
+  angry_weight: -1.0
+  sad_weight: -0.6
+  fear_weight: -0.5
+  disgust_weight: -0.9
+  surprise_weight: 0.1
+  other_weight: 0.0            # emociones personalizadas sin peso propio
+  signal_weight: 1.0           # señal emocional media (ponderada por duración/intensidad/confianza)
+  final_state_weight: 1.2      # estado del tramo final
+  trend_weight: 1.0            # evolución (pendiente) a lo largo de la llamada
+  persistence_weight: 1.0      # persistencia de estados negativos
+  stability_weight: 0.3        # estabilidad emocional
+  text_weight: 0.4             # sentimiento textual (si hay transcripción)
+  prosody_weight: 0.25         # tensión prosódica
+  intensity_gain: 0.5          # más peso a segmentos emocionalmente intensos (1 - p_neutral)
+
+score:
+  base: 50
+  scale: 50
+  sensitivity: 1.6             # amplifica la desviación respecto al centro
+
+final_segment:
+  fraction: 0.20               # último 20 % de la llamada del hablante…
+  min_seconds: 30              # …con un mínimo de segundos
+  max_seconds: 300
+
+persistence:
+  negative_valence_threshold: -0.25
+  positive_valence_threshold: 0.25
+  min_run_seconds: 10          # rachas (en tiempo de habla) de al menos esto cuentan
+
+trend:
+  smoothing_seconds: 30
+  gain: 1.5                    # amplifica la pendiente de valencia (cambio a lo largo de la llamada)
+  stable_delta: 6              # |Δ| en puntos por debajo de esto => "estable"
+
+timeline:
+  step_seconds: 10
+  window_seconds: 60           # ventana móvil del score temporal
+  smoothing_alpha: 0.35
+
+interpretation:                # rangos configurables
+  - {min: 0,  max: 20,  key: very_low,  label: Muy baja satisfacción}
+  - {min: 21, max: 40,  key: low,       label: Baja satisfacción}
+  - {min: 41, max: 60,  key: neutral,   label: Neutral}
+  - {min: 61, max: 80,  key: good,      label: Buena satisfacción}
+  - {min: 81, max: 100, key: high,      label: Alta satisfacción}
+
+confidence:
+  min_analyzed_seconds: 20     # por debajo, confianza baja
+  full_confidence_seconds: 180
+  weights: {model: 0.45, coverage: 0.30, audio_quality: 0.15, text: 0.10}
+  language_mismatch_penalty: 0.6   # factor si el idioma del modelo emocional difiere del de la llamada
+
+events:
+  min_separation_seconds: 45   # separación mínima entre eventos del mismo tipo/hablante
+  frustration_threshold: 0.55
+  anger_threshold: 0.60
+  positive_threshold: 0.60
+  shift_valence_delta: 0.45    # cambio de valencia media (ventanas de 30 s) para "cambio emocional"
+  shift_window_seconds: 30
+  satisfaction_jump: 15        # puntos en `jump_window_seconds` => cambio brusco
+  jump_window_seconds: 30
+  recovery_delta: 15
+  deterioration_delta: 15
+  conflict_threshold: 0.45     # ambos hablantes con tensión simultánea
+  ending_threshold: 0.20       # |valencia final| para "final positivo/negativo"
+  min_event_confidence: 0.35
+
+calibration:
+  enabled: false
+  min_samples: 30
+  # se rellena automáticamente: {a: 1.0, b: 0.0}
+  coefficients: {a: 1.0, b: 0.0}

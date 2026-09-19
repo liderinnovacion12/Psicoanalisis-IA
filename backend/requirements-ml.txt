@@ -1,0 +1,11 @@
+# Dependencias de ML. Instalar torch ANTES según su hardware:
+#   CPU : pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   CUDA: pip install torch --index-url https://download.pytorch.org/whl/cu124
+transformers>=4.44
+accelerate>=0.33
+faster-whisper>=1.0        # motor de WhisperX; timestamps por palabra
+silero-vad>=5.1            # VAD neuronal (fallback: VAD por energía)
+# Opcionales (ver README):
+#   pyannote.audio>=3.3,<4  # diarización principal (requiere token de Hugging Face)
+#   whisperx                # alineación forzada opcional
+#   spacy                   # NER opcional para PII
