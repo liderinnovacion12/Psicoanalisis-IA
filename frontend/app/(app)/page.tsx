@@ -1,92 +1,191 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+// Pantalla principal simplificada: subir la llamada → se analiza → resultado.
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { api } from "@/lib/api";
+import { api, audioUrl, downloadUrl, uploadWithProgress } from "@/lib/api";
+import { DEMO } from "@/lib/demo";
 import { useApp } from "@/lib/app-context";
-import EChart, { axisStyle } from "@/components/EChart";
-import { Card, Empty, Skeleton, Stat, StatusBadge, Button } from "@/components/ui";
-import { EMO_ES, emoColor, mmss, num, satColor, shortId, dateTime } from "@/lib/format";
+import { PlayerProvider } from "@/lib/player";
+import AudioPlayer from "@/components/call/AudioPlayer";
+import { SatisfactionChart } from "@/components/call/Charts";
+import { EventsTable } from "@/components/call/Panels";
+import { Badge, Button, Card, Notice, Progress, Skeleton } from "@/components/ui";
+import { bytes, confWord, emoLabel, isProcessing, mmss, pct, satColor, SPK_COLOR, TREND_ES } from "@/lib/format";
 
-export default function Dashboard() {
-  const { theme, can } = useApp();
+const EXT = ["mp3", "wav", "m4a", "aac", "flac", "ogg"];
+type Phase = "idle" | "uploading" | "processing" | "result" | "error";
+
+function Result({ id, onReset }: { id: string; onReset: () => void }) {
   const [d, setD] = useState<any>(null);
+  useEffect(() => {
+    (async () => {
+      const [call, sat, events] = await Promise.all([api(`/calls/${id}`), api(`/calls/${id}/satisfaction`), api(`/calls/${id}/events`)]);
+      setD({ call, sat, events });
+    })().catch(() => setD({ error: true }));
+  }, [id]);
+  if (!d) return <div className="space-y-4"><Skeleton className="h-40" /><Skeleton className="h-72" /></div>;
+  if (d.error) return <Notice tone="bad">No se pudo cargar el resultado.</Notice>;
+  const { call, sat, events } = d;
+  const names: Record<string, string> = Object.fromEntries(call.speakers.map((s: any) => [s.label, s.name]));
+  const sp = call.summary?.speakers || {};
+  const inter = call.summary?.interaction;
+  return (
+    <PlayerProvider src={audioUrl(id)}>
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div><h2 className="text-xl font-semibold">Resultado del análisis</h2><p className="text-xs text-muted">{call.display_name || call.filename} · {mmss(call.duration)} · idioma {call.language?.toUpperCase() || "—"}</p></div>
+          <div className="flex flex-wrap gap-2">
+            <a href={downloadUrl(`/reports/${id}`)}><Button variant="primary">Descargar PDF</Button></a>
+            <Link href={`/calls/${id}`}><Button>Ver análisis completo</Button></Link>
+            <Button variant="ghost" onClick={onReset}>Analizar otra llamada</Button>
+          </div>
+        </div>
+        {call.warnings?.length > 0 && <Notice tone="warn"><ul className="list-disc pl-5 text-xs">{call.warnings.slice(0, 3).map((w: string, i: number) => <li key={i}>{w}</li>)}</ul></Notice>}
+
+        <div className="grid gap-4 md:grid-cols-2">
+          {(["SPEAKER_00", "SPEAKER_01"] as const).map((lab, i) => {
+            const s = sp[lab];
+            return (
+              <Card key={lab}>
+                <p className="mb-2 flex items-center gap-2 text-sm font-semibold"><i className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: SPK_COLOR[i] }} />{names[lab] || lab}</p>
+                {!s ? <p className="text-sm text-muted">Sin datos suficientes.</p> : (<>
+                  <p className="text-xs text-muted">Satisfacción estimada</p>
+                  <p className={`text-5xl font-semibold tabular-nums ${satColor(s.score)}`}>{s.score.toFixed(0)}<span className="text-xl text-muted">/100</span></p>
+                  <p className="text-xs text-muted">{s.interpretation.label} · confianza {confWord(s.confidence).toLowerCase()}</p>
+                  <Progress value={s.score} className="mt-3" tone={s.score >= 61 ? "good" : s.score < 41 ? "bad" : "brand"} />
+                  <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
+                    <div><p className="text-[11px] text-muted">Predominante</p><p className="font-medium">{emoLabel(s.metrics.dominant_emotion)}</p></div>
+                    <div><p className="text-[11px] text-muted">Inicio → Final</p><p className="font-medium">{emoLabel(s.metrics.initial_emotion)} → {emoLabel(s.metrics.final_emotion)}</p></div>
+                    <div><p className="text-[11px] text-muted">Frustración</p><p className="font-medium">{pct(s.metrics.frustration)}</p></div>
+                  </div>
+                  <div className="mt-3"><Badge tone={s.trend === "improving" ? "good" : s.trend === "declining" ? "bad" : "neutral"}>Tendencia {TREND_ES[s.trend].toLowerCase()}</Badge></div>
+                </>)}
+              </Card>);
+          })}
+        </div>
+
+        {call.summary?.executive_summary && (
+          <Card title="Resumen">
+            <p className="text-sm leading-relaxed">{call.summary.executive_summary}</p>
+            {inter && <p className="mt-2 text-sm font-medium text-brand">{inter.message}</p>}
+          </Card>)}
+
+        <AudioPlayer duration={call.duration || 0} />
+        <Card title="Satisfacción durante la llamada" subtitle="Estimación del modelo; haga clic en la gráfica para escuchar ese momento">
+          <SatisfactionChart sat={sat} events={events} names={names} duration={call.duration} />
+        </Card>
+        <Card title={`Momentos destacados (${events.length})`}><EventsTable events={events.slice(0, 8)} names={names} /></Card>
+        <p className="pb-4 text-center text-[11px] text-muted">Estimaciones de modelos de aprendizaje automático; no son afirmaciones definitivas. Revise los momentos destacados con criterio humano.</p>
+      </div>
+    </PlayerProvider>
+  );
+}
+
+export default function Analizar() {
+  const { toast, can } = useApp();
+  const input = useRef<HTMLInputElement>(null);
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [file, setFile] = useState<File | null>(null);
+  const [drag, setDrag] = useState(false);
+  const [pctUp, setPctUp] = useState(0);
+  const [callId, setCallId] = useState("");
+  const [status, setStatus] = useState<any>(null);
   const [err, setErr] = useState("");
-  useEffect(() => { api("/dashboard/summary").then(setD).catch((e) => setErr(e.message)); }, []);
-  const dark = theme === "dark";
-  const ax = axisStyle(dark);
 
-  const evolution = useMemo(() => d && ({
-    grid: { left: 40, right: 12, top: 24, bottom: 28 },
-    tooltip: { trigger: "axis" },
-    xAxis: { type: "category", data: d.satisfaction_evolution.map((x: any) => x.date), ...ax },
-    yAxis: { type: "value", min: 0, max: 100, splitLine: ax.splitLine, axisLabel: ax.axisLabel },
-    series: [{ type: "line", smooth: true, data: d.satisfaction_evolution.map((x: any) => x.avg), lineStyle: { width: 3, color: "#0E9AA7" }, areaStyle: { opacity: 0.1, color: "#0E9AA7" }, itemStyle: { color: "#0E9AA7" } }],
-  }), [d, dark]);
-  const emotions = useMemo(() => d && ({
-    grid: { left: 40, right: 12, top: 16, bottom: 28 },
-    tooltip: { trigger: "axis", valueFormatter: (v: number) => `${v.toFixed(1)}%` },
-    xAxis: { type: "category", data: Object.keys(d.avg_emotions).map((k) => EMO_ES[k] || k), ...ax },
-    yAxis: { type: "value", splitLine: ax.splitLine, axisLabel: { ...ax.axisLabel, formatter: "{value}%" } },
-    series: [{ type: "bar", data: Object.entries(d.avg_emotions).map(([k, v]: any) => ({ value: +(v * 100).toFixed(1), itemStyle: { color: emoColor(k), borderRadius: [4, 4, 0, 0] } })) }],
-  }), [d, dark]);
-  const dist = useMemo(() => d && ({
-    grid: { left: 40, right: 12, top: 16, bottom: 28 }, tooltip: {},
-    xAxis: { type: "category", data: Object.keys(d.satisfaction_distribution), ...ax },
-    yAxis: { type: "value", minInterval: 1, splitLine: ax.splitLine, axisLabel: ax.axisLabel },
-    series: [{ type: "bar", data: Object.values(d.satisfaction_distribution).map((v, i) => ({ value: v, itemStyle: { color: ["#D64545", "#E0762A", "#E0A030", "#5FB878", "#2E9E5B"][i], borderRadius: [4, 4, 0, 0] } })) }],
-  }), [d, dark]);
-  const domin = useMemo(() => d && ({
-    tooltip: { trigger: "item", formatter: "{b}: {c} ({d}%)" },
-    series: [{ type: "pie", radius: ["48%", "72%"], label: { color: dark ? "#8B98A8" : "#64748B", fontSize: 11 }, data: Object.entries(d.dominant_emotions).map(([k, v]) => ({ name: EMO_ES[k] || k, value: v, itemStyle: { color: emoColor(k) } })) }],
-  }), [d, dark]);
+  const reset = () => { setPhase("idle"); setFile(null); setCallId(""); setStatus(null); setErr(""); setPctUp(0); if (typeof window !== "undefined") window.history.replaceState(null, "", "/"); };
 
-  if (err) return <Card><Empty title="No se pudo cargar el dashboard" text={err} /></Card>;
-  const t = d?.totals;
-  const noData = d && t.analyzed_calls === 0;
+  // recuperar un análisis en curso o terminado (?call=ID)
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("call");
+    if (id) { setCallId(id); setPhase("processing"); }
+  }, []);
+
+  // sondeo del estado
+  useEffect(() => {
+    if (phase !== "processing" || !callId) return;
+    let stop = false;
+    const tick = async () => {
+      try {
+        const s = await api(`/calls/${callId}/status`);
+        if (stop) return;
+        setStatus(s);
+        if (s.status === "COMPLETED") setPhase("result");
+        else if (s.status === "ERROR") { setErr(s.error || "No fue posible completar el análisis."); setPhase("error"); }
+      } catch (e: any) { if (!stop) { setErr(e.message); setPhase("error"); } }
+    };
+    tick();
+    const t = setInterval(tick, 2000);
+    return () => { stop = true; clearInterval(t); };
+  }, [phase, callId]);
+
+  function pick(f?: File | null) {
+    if (!f) return;
+    const ext = f.name.split(".").pop()?.toLowerCase() || "";
+    if (!EXT.includes(ext)) { setErr("Formato no soportado. Use MP3, WAV, M4A, AAC, FLAC u OGG."); return; }
+    setErr(""); setFile(f);
+  }
+  async function analyze() {
+    if (!file) return;
+    setPhase("uploading"); setErr(""); setPctUp(0);
+    const fd = new FormData();
+    fd.append("file", file); fd.append("allow_training", "false");
+    try {
+      const r = await uploadWithProgress("/calls/upload", fd, setPctUp);
+      setCallId(r.id); setPhase("processing");
+      window.history.replaceState(null, "", `/?call=${r.id}`);
+    } catch (e: any) { setErr(e.message); setPhase("idle"); }
+  }
+  async function loadExample() {
+    try { const l = await api("/calls", { query: { status: "COMPLETED" } }); setCallId(l.items[0].id); setPhase("result"); } catch (e: any) { toast("err", e.message); }
+  }
+
+  if (phase === "result") return <Result id={callId} onReset={reset} />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-end justify-between">
-        <div><h1 className="text-2xl font-semibold">Dashboard</h1><p className="text-sm text-muted">Resumen de los últimos {d?.days ?? 90} días · valores estimados por los modelos</p></div>
-        {can("ANALYST") && <Link href="/calls/new"><Button variant="primary">＋ Nueva llamada</Button></Link>}
+    <div className="mx-auto max-w-2xl space-y-5">
+      <div className="text-center">
+        <h1 className="text-2xl font-semibold">Analiza una llamada</h1>
+        <p className="mt-1 text-sm text-muted">Sube la grabación y obtén la satisfacción y las emociones de cada persona.</p>
       </div>
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
-        <Stat label="Total de llamadas" value={t?.total_calls} loading={!d} />
-        <Stat label="Llamadas analizadas" value={t?.analyzed_calls} hint={t?.processing ? `${t.processing} en proceso` : undefined} loading={!d} />
-        <Stat label="Satisfacción promedio" value={t?.avg_satisfaction != null ? `${t.avg_satisfaction}/100` : "—"} tone={satColor(t?.avg_satisfaction)} loading={!d} />
-        <Stat label="Frustración promedio" value={t?.avg_frustration != null ? `${t.avg_frustration}%` : "—"} loading={!d} />
-        <Stat label="Duración promedio" value={t?.avg_duration != null ? mmss(t.avg_duration) : "—"} loading={!d} />
-        <Stat label="Calidad promedio" value={t?.avg_quality != null ? `${t.avg_quality}/100` : "—"} loading={!d} />
-      </div>
-      {noData ? (
-        <Card><Empty title="Aún no hay llamadas analizadas" text="Suba una grabación para ver aquí la satisfacción, las emociones y su evolución." action={<Link href="/calls/new"><Button variant="primary">Subir llamada</Button></Link>} /></Card>
-      ) : (
-        <>
-          <div className="grid gap-5 xl:grid-cols-2">
-            <Card title="Satisfacción promedio" subtitle="Evolución diaria (promedio de participantes)">{evolution ? <EChart option={evolution as any} height={250} /> : <Skeleton className="h-60" />}</Card>
-            <Card title="Emociones" subtitle="Probabilidad media por emoción (todas las llamadas)">{emotions ? <EChart option={emotions as any} height={250} /> : <Skeleton className="h-60" />}</Card>
-            <Card title="Distribución de satisfacción" subtitle="Nº de participantes por rango">{dist ? <EChart option={dist as any} height={250} /> : <Skeleton className="h-60" />}</Card>
-            <Card title="Emoción predominante" subtitle="Por participante">{domin ? <EChart option={domin as any} height={250} /> : <Skeleton className="h-60" />}</Card>
+
+      {(phase === "idle" || phase === "uploading") && (<>
+        <div onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={(e) => { e.preventDefault(); setDrag(false); pick(e.dataTransfer.files?.[0]); }}
+          className={`flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed px-6 py-14 text-center transition ${drag ? "border-brand bg-brand/10" : "border-line bg-surface"}`}>
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand/15 text-2xl text-brand">⇪</div>
+          {file ? (<><p className="font-medium">{file.name}</p><p className="text-xs text-muted">{bytes(file.size)}</p></>)
+            : (<><p className="font-medium">Arrastra tu grabación aquí</p><p className="text-xs text-muted">MP3 • WAV • M4A • AAC • FLAC • OGG · llamadas cortas o de horas</p></>)}
+          <div className="flex gap-2">
+            <Button onClick={() => input.current?.click()} disabled={phase === "uploading"}>{file ? "Cambiar archivo" : "Elegir archivo"}</Button>
+            {file && <Button variant="primary" onClick={analyze} disabled={phase === "uploading" || !can("ANALYST")}>{phase === "uploading" ? "Subiendo…" : "Analizar"}</Button>}
           </div>
-          <Card title="Llamadas recientes" actions={<Link href="/calls" className="text-xs text-brand">Ver todas →</Link>} pad={false}>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] text-sm">
-                <thead><tr className="border-b border-line text-left text-xs text-muted">{["ID", "Archivo", "Fecha", "Duración", "Estado", "Satisf. P1", "Satisf. P2"].map((h) => <th key={h} className="px-4 py-2 font-medium">{h}</th>)}</tr></thead>
-                <tbody>
-                  {(d?.recent || []).map((c: any) => (
-                    <tr key={c.id} className="border-b border-line/60 hover:bg-surface2/60">
-                      <td className="px-4 py-2"><Link href={`/calls/${c.id}`} className="text-brand">{shortId(c.id)}</Link></td>
-                      <td className="max-w-[220px] truncate px-4 py-2">{c.display_name || c.filename}</td><td className="px-4 py-2 text-muted">{dateTime(c.created_at)}</td>
-                      <td className="px-4 py-2 tabular-nums">{mmss(c.duration)}</td><td className="px-4 py-2"><StatusBadge status={c.status} /></td>
-                      <td className={`px-4 py-2 tabular-nums font-medium ${satColor(c.satisfaction_p1)}`}>{num(c.satisfaction_p1)}</td>
-                      <td className={`px-4 py-2 tabular-nums font-medium ${satColor(c.satisfaction_p2)}`}>{num(c.satisfaction_p2)}</td>
-                    </tr>))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        </>
-      )}
+          <input ref={input} type="file" hidden accept=".mp3,.wav,.m4a,.aac,.flac,.ogg,audio/*" onChange={(e) => pick(e.target.files?.[0])} />
+        </div>
+        {phase === "uploading" && <div><Progress value={pctUp} /><p className="mt-1 text-center text-xs text-muted">Subiendo… {Math.round(pctUp)}%</p></div>}
+        {err && <Notice tone="bad">{err}</Notice>}
+        {DEMO && (
+          <Notice tone="info">
+            <p className="text-sm"><b>Modo demostración (sin servidor):</b> aquí no se puede analizar audio nuevo. Puede ver el resultado real de una llamada de ejemplo <b>sintética</b>:</p>
+            <Button className="mt-2" variant="primary" onClick={loadExample}>Ver resultado de ejemplo</Button>
+          </Notice>)}
+        <p className="text-center text-xs text-muted">Tu grabación se procesa en tu propio servidor y no se usa para entrenar modelos.</p>
+      </>)}
+
+      {phase === "processing" && (
+        <Card title="Analizando la llamada…" subtitle="Puedes cerrar la página: el análisis continúa y podrás volver desde el Historial.">
+          <div className="mb-4 flex items-center gap-3"><Progress value={status?.progress ?? 0} className="flex-1" /><span className="w-12 text-right text-sm tabular-nums">{Math.round(status?.progress ?? 0)}%</span></div>
+          <ul className="space-y-2">
+            {(status?.stages || []).map((s: any) => (
+              <li key={s.key} className="flex items-center gap-3 text-sm">
+                <span className="w-5 text-center">{s.state === "COMPLETED" ? "✓" : s.state === "FAILED" ? "✗" : s.state === "RUNNING" ? "…" : "·"}</span>
+                <span className="w-32 font-medium">{s.label}</span>
+                <span className="text-xs text-muted">{s.state === "RUNNING" ? `${Math.round(s.progress)}% ${s.message || ""}` : s.state === "COMPLETED" ? "Completado" : s.state === "FAILED" ? "Falló" : "Pendiente"}</span>
+              </li>))}
+          </ul>
+        </Card>)}
+
+      {phase === "error" && (
+        <div className="space-y-3"><Notice tone="bad">{err}</Notice>
+          <div className="flex gap-2"><Button variant="primary" onClick={reset}>Intentar de nuevo</Button>{callId && <Link href={`/calls/${callId}`}><Button>Ver detalle</Button></Link>}</div></div>)}
     </div>
   );
 }

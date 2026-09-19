@@ -42,7 +42,7 @@ export default function Calls() {
   return (
     <div className="space-y-5">
       <div className="flex items-end justify-between"><div><h1 className="text-2xl font-semibold">Llamadas</h1><p className="text-sm text-muted">Historial de grabaciones analizadas</p></div>
-        {can("ANALYST") && <Link href="/calls/new"><Button variant="primary">＋ Nueva llamada</Button></Link>}</div>
+        {can("ANALYST") && <Link href="/"><Button variant="primary">＋ Nueva llamada</Button></Link>}</div>
       <Card>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
           <input className="sm:col-span-2" placeholder="Buscar por ID, nombre, archivo o fecha…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} aria-label="Buscar" />

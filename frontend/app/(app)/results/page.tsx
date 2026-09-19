@@ -12,7 +12,7 @@ export default function Results() {
   return (
     <div className="space-y-5">
       <div><h1 className="text-2xl font-semibold">Resultados</h1><p className="text-sm text-muted">Llamadas analizadas · abra una para ver diarización, transcripción, emociones, satisfacción y eventos</p></div>
-      {!d ? <Skeleton className="h-64" /> : d.items.length === 0 ? <Card><Empty title="Aún no hay resultados" text="Cuando una llamada termine de procesarse aparecerá aquí." action={<Link href="/calls/new"><Button variant="primary">Subir llamada</Button></Link>} /></Card> : (
+      {!d ? <Skeleton className="h-64" /> : d.items.length === 0 ? <Card><Empty title="Aún no hay resultados" text="Cuando una llamada termine de procesarse aparecerá aquí." action={<Link href="/"><Button variant="primary">Subir llamada</Button></Link>} /></Card> : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {d.items.map((c: any) => (
             <Link key={c.id} href={`/calls/${c.id}`} className="rounded-xl border border-line bg-surface p-4 shadow-card transition hover:border-brand">

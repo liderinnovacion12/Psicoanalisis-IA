@@ -8,18 +8,17 @@ import { Toasts, Skeleton, Badge } from "./ui";
 import { DEMO } from "@/lib/demo";
 
 const NAV = [
-  { href: "/", label: "Dashboard", icon: "▦" },
-  { href: "/calls", label: "Llamadas", icon: "☎" },
-  { href: "/calls/new", label: "Nueva llamada", icon: "＋" },
-  { href: "/results", label: "Resultados", icon: "◔" },
-  { href: "/dataset", label: "Dataset", icon: "▤" },
-  { href: "/labeling", label: "Etiquetado", icon: "✎" },
-  { href: "/training", label: "Entrenamiento", icon: "⚙" },
-  { href: "/models", label: "Modelos", icon: "◈" },
-  { href: "/reports", label: "Reportes", icon: "⇩" },
-  { href: "/settings", label: "Configuración", icon: "☰" },
+  { href: "/", label: "Analizar llamada", icon: "◉" },
+  { href: "/calls", label: "Historial", icon: "☎" },
+  { href: "/dashboard", label: "Dashboard", icon: "▦" },
+  { href: "/dataset", label: "Dataset", icon: "▤", adv: true },
+  { href: "/labeling", label: "Etiquetado", icon: "✎", adv: true },
+  { href: "/training", label: "Entrenamiento", icon: "⚙", adv: true },
+  { href: "/models", label: "Modelos", icon: "◈", adv: true },
+  { href: "/reports", label: "Reportes", icon: "⇩", adv: true },
+  { href: "/settings", label: "Configuración", icon: "☰", adv: true },
 ];
-const CRUMBS: Record<string, string> = { calls: "Llamadas", new: "Nueva llamada", results: "Resultados", dataset: "Dataset", labeling: "Etiquetado", training: "Entrenamiento", models: "Modelos", reports: "Reportes", settings: "Configuración" };
+const CRUMBS: Record<string, string> = { dashboard: "Dashboard", calls: "Llamadas", new: "Nueva llamada", results: "Resultados", dataset: "Dataset", labeling: "Etiquetado", training: "Entrenamiento", models: "Modelos", reports: "Reportes", settings: "Configuración" };
 
 export default function Shell({ children }: { children: ReactNode }) {
   const { user, loading, logout, theme, toggleTheme } = useApp();
@@ -37,7 +36,7 @@ export default function Shell({ children }: { children: ReactNode }) {
   }
   const parts = path.split("/").filter(Boolean);
   const crumbs = [{ href: "/", label: "Inicio" }, ...parts.map((p, i) => ({ href: "/" + parts.slice(0, i + 1).join("/"), label: CRUMBS[p] || (p.length > 12 ? `Llamada ${p.slice(0, 8)}` : p) }))];
-  const active = (h: string) => (h === "/" ? path === "/" : h === "/calls" ? path === "/calls" || (path.startsWith("/calls/") && !path.startsWith("/calls/new")) : path.startsWith(h));
+  const active = (h: string) => (h === "/" ? path === "/" : h === "/dashboard" ? path === "/dashboard" : h === "/calls" ? path === "/calls" || (path.startsWith("/calls/") && !path.startsWith("/calls/new")) : path.startsWith(h));
 
   const sidebar = (
     <nav className="flex h-full flex-col gap-1 p-3">
@@ -45,10 +44,13 @@ export default function Shell({ children }: { children: ReactNode }) {
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand text-lg font-bold text-white">◉</div>
         <div><p className="text-sm font-semibold leading-tight">Analizador de<br />Llamadas IA</p></div>
       </div>
-      {NAV.map((n) => (
-        <Link key={n.href} href={n.href} className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${active(n.href) ? "bg-brand/12 text-brand" : "text-muted hover:bg-surface2 hover:text-ink"}`}>
+      {NAV.map((n, i) => (
+        <div key={n.href} className="contents">
+        {n.adv && !NAV[i - 1]?.adv && <p className="mb-1 mt-3 px-3 text-[11px] font-semibold uppercase tracking-wide text-muted/70">Avanzado</p>}
+        <Link href={n.href} className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${active(n.href) ? "bg-brand/12 text-brand" : "text-muted hover:bg-surface2 hover:text-ink"}`}>
           <span className="w-4 text-center opacity-80">{n.icon}</span>{n.label}
         </Link>
+        </div>
       ))}
       <div className="mt-auto rounded-lg border border-line bg-surface2 p-3 text-xs">
         <p className="mb-1 font-medium text-muted">DEVICE</p>
