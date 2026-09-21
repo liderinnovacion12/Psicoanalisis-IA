@@ -150,22 +150,26 @@ def test_finetune_registers_versioned_model_with_metrics_and_activation(client, 
 
 
 def test_stop_and_resume_training(client, env, dataset):
+    """Detiene a mitad (tras la 1.ª época) y continúa desde el checkpoint hasta completar TODAS las épocas."""
     h = env["h"]
+    EPOCHS = 12                                     # suficientes para que la parada llegue antes de terminar aunque la máquina sea rápida
     r = client.post(f"{API}/training/start", headers=h, json={"dataset_id": dataset, "kind": "emotion", "base_model_id": env["base"], "name": "stoppable",
-                    "params": {"epochs": 5, "batch_size": 8, "learning_rate": 1e-3, "warmup_steps": 1, "gradient_accumulation": 1, "early_stopping_patience": 0}})
+                    "params": {"epochs": EPOCHS, "batch_size": 8, "learning_rate": 1e-3, "warmup_steps": 1, "gradient_accumulation": 1, "early_stopping_patience": 0}})
     rid = r.json()["id"]
     t0 = time.time()
     while time.time() - t0 < 300:
         cur = client.get(f"{API}/training/{rid}", headers=h).json()
-        if cur["current_epoch"] >= 1:
+        if cur["current_epoch"] >= 1 or cur["status"] in ("COMPLETED", "FAILED"):
             break
-        time.sleep(0.5)
+        time.sleep(0.05)
     assert client.post(f"{API}/training/{rid}/stop", headers=h).status_code == 200
     stopped = wait_run(client, h, rid, {"STOPPED", "COMPLETED", "FAILED"})
-    assert stopped["status"] == "STOPPED" and stopped["resumable"]
+    assert stopped["status"] == "STOPPED" and stopped["resumable"] and 1 <= len(stopped["metrics_history"]) < EPOCHS
+    done_before = len(stopped["metrics_history"])
     assert client.post(f"{API}/training/{rid}/resume", headers=h).status_code == 200
     done = wait_run(client, h, rid, {"COMPLETED", "FAILED"})
-    assert done["status"] == "COMPLETED" and done["current_epoch"] == 5 and len(done["metrics_history"]) == 5     # continuó desde el checkpoint
+    assert done["status"] == "COMPLETED" and done["current_epoch"] == EPOCHS and len(done["metrics_history"]) == EPOCHS
+    assert [m["epoch"] for m in done["metrics_history"]][:done_before] == list(range(1, done_before + 1))     # no repite épocas ya hechas
 
 
 def test_satisfaction_regressor_training_and_calibration():
