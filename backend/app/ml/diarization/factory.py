@@ -19,4 +19,8 @@ def get_diarizer(mode: str, cfg: dict) -> Diarizer:
             return PyannoteDiarizer()
         if engine == "pyannote":
             log.warning("engine=pyannote pero no está disponible (paquete o HF_TOKEN); se usa el respaldo")
+    if engine in ("auto", "pyannote", "embedding"):
+        from app.ml.diarization.embedding import EmbeddingDiarizer, embedding_model_available
+        if embedding_model_available():
+            return EmbeddingDiarizer()
     return SpectralDiarizer()

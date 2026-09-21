@@ -125,3 +125,21 @@ def test_encryption_random_access(tmp_path):
     a, b = crypto.CHUNK - 10, 2 * crypto.CHUNK + 50
     assert b"".join(crypto.read_range(p, key, a, b)) == data[a:b + 1]
     assert crypto.plain_size(p) == len(data)
+
+
+def test_embedding_decision_one_vs_two_speakers():
+    """Con embeddings sintéticos: misma voz con variación -> 1 persona; dos direcciones muy distintas -> 2."""
+    from app.ml.diarization.embedding import DEFAULTS, cluster_two, looks_like_two_speakers
+    rng = np.random.default_rng(0)
+    base = rng.normal(size=512); base /= np.linalg.norm(base)
+    other = rng.normal(size=512); other -= other @ base * base; other /= np.linalg.norm(other)
+    norm = lambda M: M / np.linalg.norm(M, axis=1, keepdims=True)
+    same = norm(base + 0.25 * rng.normal(size=(60, 512)) / np.sqrt(512) * 3)                 # una voz, variación moderada
+    two = norm(np.vstack([base + 0.2 * rng.normal(size=(30, 512)) / np.sqrt(512) * 3,
+                          other + 0.2 * rng.normal(size=(30, 512)) / np.sqrt(512) * 3]))     # dos voces ortogonales
+    _, s1 = cluster_two(same)
+    _, s2 = cluster_two(two)
+    assert not looks_like_two_speakers(s1, DEFAULTS) and s1["centroid_similarity"] > 0.72
+    assert looks_like_two_speakers(s2, DEFAULTS) and s2["gap"] > 0.25
+    tiny = norm(np.vstack([base + 0.1 * rng.normal(size=(58, 512)) / np.sqrt(512), other[None] * np.ones((2, 1))]))
+    assert not looks_like_two_speakers(cluster_two(tiny)[1], DEFAULTS)                          # 2 ventanas atípicas no son una persona

@@ -4,10 +4,10 @@ ES REAL PERO DE PRECISIÓN LIMITADA: sirve cuando no hay token de Hugging Face /
 resultados de calidad use `pyannote` o audio estéreo con un hablante por canal. La calidad
 reportada se limita (<= 60) y la UI muestra una advertencia.
 
-Detección de 1 vs 2 hablantes (automática): tras agrupar en 2 clusters se exige que la separación sea real:
-    silhouette (etiquetas suavizadas) >= `min_silhouette`  Y  separación de centroides >= `min_separation`.
-Umbrales calibrados con audio real (ver docs/README): una voz -> silhouette ≈ 0.02-0.03, sep ≈ 0.3-0.5;
-dos voces -> silhouette ≈ 0.20, sep ≈ 1.1. Con pocos datos de calibración, el usuario puede FORZAR 1 o 2 personas.
+Es el ÚLTIMO recurso (solo si no se puede cargar el modelo de embeddings, ver embedding.py). Con datos reales se comprobó
+que estas estadísticas NO separan bien: una sola persona con entonación variable dio silhouette 0.196 / separación 1.15,
+igual que dos voces sintéticas (0.208 / 1.12). Por eso el automático exige umbrales altos (tenderá a decidir "una persona") y el
+usuario puede FORZAR 1 o 2 personas.
 """
 from __future__ import annotations
 
@@ -22,8 +22,8 @@ from app.ml.diarization.base import (DiarizationResult, Diarizer, Turn, SPEAKERS
 
 log = get_logger(__name__)
 WIN, HOP = 1.5, 0.75
-MIN_SILHOUETTE = 0.12
-MIN_SEPARATION = 0.75
+MIN_SILHOUETTE = 0.25     # último recurso: las estadísticas MFCC confunden "misma voz, distinta entonación" con "dos voces"
+MIN_SEPARATION = 1.30
 
 
 def _features(path: Path, vad: list[tuple[float, float]], sr: int = 16000, block_s: float = 600):

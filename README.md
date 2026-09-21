@@ -31,9 +31,11 @@ Verificado en este entorno (Windows 11, CPU, sin GPU, sin Docker):
 
 * **pyannote.audio no se pudo ejecutar** (exige token de Hugging Face y aceptar condiciones del modelo). El código está escrito
   (chunks de 30 min, reconciliación de hablantes por embeddings, reducción a 2 voces, aviso de >2) pero **no probado con el modelo real**.
-  Sin él se usa: (a) **audio estéreo con un hablante por canal** (fiable, probado), o (b) un **diarizador de respaldo local** por MFCC + KMeans.
-  El respaldo acertó el 91.7 % por trama en el audio de ejemplo (voces sintéticas muy distintas); en llamadas reales será peor: por eso su
-  «calidad de diarización» se limita a ≤ 60 y la UI lo advierte.
+  Sin él se usa: (a) **audio estéreo con un hablante por canal** (fiable, probado), o (b) un **diarizador de respaldo con embeddings de voz**
+  (`microsoft/wavlm-base-plus-sv`, sin token) que además decide si hay **1 o 2 personas**; su «calidad de diarización» se limita a ≤ 70 y la UI lo advierte.
+  Calibración limitada: solo hay 1 ejemplo de dos voces (sintético) y 3 de una voz (2 reales). Si el automático se equivoca, el selector
+  «Personas en la llamada» (auto / 1 / 2) lo fuerza. Un método anterior por estadísticas MFCC se descartó como principal: con datos reales dio
+  los mismos números para una persona con entonación variable y para dos voces sintéticas (no las distingue); queda como último recurso.
 * **WhisperX**: la integración está escrita, pero por defecto se usa `faster-whisper` (su mismo motor, con timestamps por palabra). No probada.
 * **Docker/Compose, S3/MinIO, Celery+Redis, PostgreSQL, GPU/CUDA**: escritos y revisados, **no ejecutados aquí** (no hay Docker/GPU). En
   desarrollo se usa SQLite y `TASK_MODE=inline` con exactamente el mismo código de etapas. Pruebe `docker compose up` en su entorno.
@@ -145,8 +147,9 @@ dos veces. Espere mucho mejor en GPU; en CPU una llamada de 1 h tardaría ≈ 1 
 
 ## 8. Diarización, audio y transcripción
 * **Estéreo con un hablante por canal** (detección automática por correlación y actividad exclusiva) → cada canal es un hablante; se obtienen solapamientos reales.
-* **Mono**: pyannote (defina `HF_TOKEN`, acepte las condiciones de `pyannote/speaker-diarization-3.1` y `pip install "pyannote.audio>=3.3,<4"`), o el respaldo local.
-  Se fuerza el resultado a 2 hablantes; si hay más voces relevantes se muestra *«Se detectaron más de dos posibles hablantes. Revise la diarización.»*
+* **Mono**: pyannote (defina `HF_TOKEN`, acepte las condiciones de `pyannote/speaker-diarization-3.1` y `pip install "pyannote.audio>=3.3,<4"`), o el respaldo local
+  por embeddings de voz. **Una o dos personas**: se detecta automáticamente y se puede forzar en la subida o al re-analizar; con una sola persona la app muestra
+  una única tarjeta «Persona» (sin resultado de interacción). Si hay más de dos voces relevantes: *«Se detectaron más de dos posibles hablantes. Revise la diarización.»*
 * Formatos: MP3, WAV, M4A, AAC, FLAC, OGG (probados). Se normaliza a 16 kHz mono (loudnorm + filtro paso alto). Calidad de audio 0-100 (SNR estimada por percentiles,
   clipping, nivel, voz, ancho de banda); si es baja: *«El resultado puede presentar menor precisión debido a la calidad del audio.»*
 * Transcripción: faster-whisper (`small` por defecto; cambie en *Configuración → Audio*), idioma detectado por votación y fijado para toda la llamada (prioridad español).

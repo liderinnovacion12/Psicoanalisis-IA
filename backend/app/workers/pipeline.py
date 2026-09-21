@@ -170,7 +170,7 @@ def stage_diarize(ctx: StageCtx) -> None:
     diarizer = get_diarizer(ar["mode"], cfg)
     hint = speakers_hint(call)
     ch = config_hash(diarizer.name, cfg["diarization"], cfg["segmentation"]["merge_gap"], cfg["segmentation"]["min_turn"],
-                     cfg["vad"], cfg["channels"], hint, "v2")
+                     cfg["vad"], cfg["channels"], hint, "v3")
     cached = cache_get(call.org_id, call.file_hash, "diarization", ch)
     if cached:
         result = DiarizationResult.from_dict(cached)
@@ -181,9 +181,9 @@ def stage_diarize(ctx: StageCtx) -> None:
         except Exception as e:
             if diarizer.name in ("spectral", "channels"):
                 raise
-            log.error("pyannote falló; se usa el respaldo espectral", extra={"call_id": call.id, "error": str(e)})
+            log.error("el diarizador falló; se usa el respaldo espectral", extra={"call_id": call.id, "engine": diarizer.name, "error": str(e)})
             result = SpectralDiarizer().diarize(ctx.wd, ar["files"], vad, cfg, ctx.progress, hint)
-            result.warnings.append("pyannote no pudo ejecutarse; se utilizó la diarización de respaldo.")
+            result.warnings.append(f"{diarizer.name} no pudo ejecutarse; se utilizó la diarización de respaldo básica.")
         cache_put(call.org_id, call.file_hash, "diarization", ch, result.to_dict())
     if not result.turns:
         raise ProcessingError("diarization", "no se detectó voz",

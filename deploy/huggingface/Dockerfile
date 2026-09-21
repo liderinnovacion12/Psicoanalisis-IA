@@ -32,7 +32,7 @@ RUN pip install torch --index-url https://download.pytorch.org/whl/cpu \
 
 # Descarga los modelos UNA vez, al construir (así no se bajan en cada reinicio del Space).
 ENV MODEL_CACHE_DIR=/app/model_cache
-RUN python -c "from huggingface_hub import snapshot_download as d; d('r-f/wav2vec-english-speech-emotion-recognition', cache_dir='/app/model_cache'); d('Systran/faster-whisper-small', cache_dir='/app/model_cache/whisper')"
+RUN python -c "from huggingface_hub import snapshot_download as d; d('r-f/wav2vec-english-speech-emotion-recognition', cache_dir='/app/model_cache'); d('Systran/faster-whisper-small', cache_dir='/app/model_cache/whisper'); d('microsoft/wavlm-base-plus-sv', cache_dir='/app/model_cache')"
 
 COPY --from=web /src/deploy/huggingface/start.sh /app/start.sh
 RUN chmod +x /app/start.sh && chown -R user:user /app

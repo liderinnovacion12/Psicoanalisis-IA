@@ -46,7 +46,7 @@ quality:
   weights: {snr: 0.35, clipping: 0.15, level: 0.15, speech: 0.20, bandwidth: 0.15}
 
 diarization:
-  engine: auto                # auto | pyannote | channels | spectral
+  engine: auto                # auto | pyannote | channels | embedding | spectral
   expected_speakers: 2
   max_speakers_probe: 4       # pyannote puede detectar hasta N para poder avisar
   minor_speaker_ratio: 0.05   # voces con < 5 % del habla se reasignan
@@ -54,6 +54,13 @@ diarization:
   chunk_minutes: 30
   chunk_overlap_seconds: 15
   match_threshold: 0.55       # distancia coseno máx. para reconciliar hablantes entre chunks
+  embedding:                  # respaldo sin token: embeddings de hablante (WavLM-SV) para decidir 1 vs 2 personas
+    model: microsoft/wavlm-base-plus-sv
+    window: 3.0
+    hop: 1.5
+    max_centroid_similarity: 0.72   # dos personas solo si la similitud entre grupos es <= esto (misma voz: 0.85-0.99)
+    min_gap: 0.25
+    min_minor_share: 0.08
 
 transcription:
   engine: faster-whisper      # faster-whisper | whisperx

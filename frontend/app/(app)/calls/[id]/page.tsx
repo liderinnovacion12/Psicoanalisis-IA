@@ -131,7 +131,7 @@ export default function CallDetail({ params }: { params: Promise<{ id: string }>
           <Stat label={call.n_speakers === 1 ? "Evolución" : "Interacción"} value={inter?.variation != null ? `${inter.variation > 0 ? "+" : ""}${inter.variation.toFixed(0)}` : "—"} hint={inter ? `${inter.initial} → ${inter.final}` : undefined} tone={inter?.variation > 6 ? "text-good" : inter?.variation < -6 ? "text-bad" : undefined} />
         </div>
 
-        {call.diarization_mode === "spectral" && call.n_speakers !== 1 && <Notice tone="warn">La diarización utilizada es el <b>método de respaldo</b> (sin pyannote), de menor precisión. Configure <code>HF_TOKEN</code> para usar pyannote.audio, o use audio estéreo con una persona por canal.</Notice>}
+        {["spectral", "embedding"].includes(call.diarization_mode) && call.n_speakers !== 1 && <Notice tone="warn">La diarización utilizada es el <b>método de respaldo</b> (sin pyannote), de menor precisión. Configure <code>HF_TOKEN</code> para usar pyannote.audio, o use audio estéreo con una persona por canal.</Notice>}
 
         {call.summary?.executive_summary && (
           <Card title="Resumen" subtitle="Separación entre datos observados e interpretación del modelo">

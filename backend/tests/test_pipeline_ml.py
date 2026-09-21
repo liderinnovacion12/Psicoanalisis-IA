@@ -97,11 +97,13 @@ def test_mono_diarization_fallback_vs_ground_truth(tmp_path):
     import numpy as np
     from app.core.config import get_config_store
     from app.ml.audio.processing import load_vad, process_audio
+    from app.ml.diarization.embedding import EmbeddingDiarizer
     from app.ml.diarization.spectral import SpectralDiarizer
     cfg = get_config_store().defaults("audio")
     res = process_audio(EXAMPLES / "llamada_ejemplo_mono.wav", tmp_path, cfg)
     assert res["mode"] == "mono"
-    d = SpectralDiarizer().diarize(tmp_path, res["files"], load_vad(tmp_path), cfg)
+    d = EmbeddingDiarizer().diarize(tmp_path, res["files"], load_vad(tmp_path), cfg)            # respaldo por defecto (embeddings)
+    d_mfcc = SpectralDiarizer().diarize(tmp_path, res["files"], load_vad(tmp_path), cfg, hint=2)  # último recurso, forzado a 2
     truth = json.loads((EXAMPLES / "llamada_ejemplo_verdad.json").read_text(encoding="utf-8"))["turns"]
     grid = np.arange(0, res["duration"], 0.1)
 
@@ -114,9 +116,12 @@ def test_mono_diarization_fallback_vs_ground_truth(tmp_path):
     gt, pr = lab(truth, "t"), lab(d.turns, "p")
     m = (gt >= 0) & (pr >= 0)
     acc = max((gt[m] == pr[m]).mean(), (gt[m] != pr[m]).mean())                 # mejor asignación de etiquetas
-    print(f"diarización de respaldo: acierto por trama = {acc:.2%}, calidad reportada = {d.quality}")
-    assert d.quality <= 60 and d.warnings                                       # nunca se presenta como diarización de alta calidad
-    assert acc > 0.7
+    gt2, pr2 = lab(truth, "t"), lab(d_mfcc.turns, "p")
+    m2 = (gt2 >= 0) & (pr2 >= 0)
+    acc2 = max((gt2[m2] == pr2[m2]).mean(), (gt2[m2] != pr2[m2]).mean())
+    print(f"diarización de respaldo (embeddings): acierto por trama = {acc:.2%}, calidad = {d.quality} | MFCC forzado: {acc2:.2%}")
+    assert d.quality <= 70 and d.warnings                                       # nunca se presenta como diarización de alta calidad
+    assert d.n_speakers_detected == 2 and acc > 0.85 and acc2 > 0.7
 
 
 def test_resume_from_checkpoint_after_failure(client, monkeypatch):
@@ -222,7 +227,8 @@ def test_single_voice_audio_is_analyzed_as_one_person(client, admin_a):
 def test_two_voice_mono_is_detected_as_two_and_can_be_forced_to_one(client, admin_a):
     cid = analyze(client, admin_a, MONO_2)
     d = detail(client, admin_a, cid)
-    assert d["n_speakers"] == 2 and d["checkpoints"]["diarization"]["details"].get("silhouette", 0) >= 0.12
+    assert d["n_speakers"] == 2 and d["diarization_mode"] == "embedding"
+    assert d["checkpoints"]["diarization"]["details"]["centroid_similarity"] <= 0.72
     # el usuario indica que es una sola persona -> se re-analiza desde el audio
     r = client.post(f"{API}/calls/{cid}/reanalyze", headers=admin_a, params={"speakers": "1"})
     assert r.status_code == 200, r.text
