@@ -33,12 +33,14 @@ from app.ml.diarization.spectral import SpectralDiarizer
 from app.ml.emotion.factory import build_model, get_production_model_row
 from app.ml.emotion.inference import iter_window_results
 from app.ml.emotion.preprocessing import plan_windows
+from app.ml.emotion.fusion import TextTrack, fuse, temper, weights_for
 from app.ml.privacy.pii import redact_text
 from app.ml.prosody.features import build_baseline, tension_from_prosody
 from app.ml.prosody.interaction import interaction_metrics
 from app.ml.satisfaction.engine import SatisfactionEngine, confidence_level
 from app.ml.satisfaction.events import detect_events
 from app.ml.satisfaction.features import build_series
+from app.ml.text.emotion_text import TextEmotionAnalyzer
 from app.ml.text.sentiment import get_text_analyzer
 from app.ml.transcription.base import (RawTranscript, assign_words_to_speakers, group_utterances)
 from app.ml.transcription.whisper import get_transcriber
@@ -263,9 +265,11 @@ def stage_transcribe(ctx: StageCtx) -> None:
     seg_by_spk: dict[str, list[AudioSegment]] = {}
     for s in segs:
         seg_by_spk.setdefault(id2label[s.speaker_id], []).append(s)
+    ctx.progress(92, "Analizando el texto")
+    text_emos = TextEmotionAnalyzer(cfg["emotion"]).analyze_batch([u.text for u in utts], call.language)
     db.execute(delete(Transcription).where(Transcription.call_id == call.id))
     rows = []
-    for u in utts:
+    for u, temo in zip(utts, text_emos):
         sig = analyzer.analyze(u.text, call.language)
         red, spans = redact_text(u.text, pii_entities)
         mid = (u.start + u.end) / 2
@@ -274,7 +278,7 @@ def stage_transcribe(ctx: StageCtx) -> None:
             org_id=call.org_id, call_id=call.id, speaker_id=speakers[u.speaker].id, segment_id=seg.id if seg else None,
             start=round(u.start, 3), end=round(u.end, 3), text=u.text, text_redacted=red, confidence=round(u.confidence, 4),
             language=call.language, words=[[round(w.start, 2), round(w.end, 2), w.word.strip(), round(w.prob, 3)] for w in u.words],
-            sentiment=sig.to_dict(), pii=spans))
+            sentiment={**sig.to_dict(), **({"emotions": {k: round(v, 4) for k, v in temo.items()}} if temo else {})}, pii=spans))
     db.add_all(rows)
     total_w = sum(len(u.words) for u in utts)
     mean_conf = float(np.average([u.confidence for u in utts], weights=[max(u.end - u.start, 0.1) for u in utts])) if utts else 0.0
@@ -317,6 +321,16 @@ def stage_emotions(ctx: StageCtx) -> None:
                        seg_cfg["min_window"], [(t.speaker, round(t.start, 2), round(t.end, 2)) for t in turns],
                        cfg["emotion"]["prosody"])
     cached = cache_get(call.org_id, call.file_hash, "emotions", ckey) if done == 0 else None
+    # Emoción del TEXTO por hablante (si existe) y pesos de fusión según el idioma (audio del modelo vs. idioma de la llamada)
+    tracks: dict[str, TextTrack] = {}
+    for lab, spk in speakers.items():
+        tracks[lab] = TextTrack([(t.start, t.end, (t.sentiment or {}).get("emotions") or {})
+                                 for t in db.scalars(select(Transcription).where(Transcription.call_id == call.id,
+                                                                                 Transcription.speaker_id == spk.id))])
+    lang_match = not (mrow.language and call.language and mrow.language[:2] != call.language[:2])
+    wa, wt = weights_for(lang_match, cfg["emotion"])
+    # Si el modelo de audio está en otro idioma, sus probabilidades se aplanan (medido en español: 36 % de exactitud con 94 % de confianza)
+    T_lang = 1.0 if lang_match else float(cfg["emotion"].get("language_mismatch_temperature", 1.0))
     speaker_channel = ({s.label: f"ch{s.channel}" for s in speakers.values()} if ar["mode"] == "stereo_split"
                        else {s.label: "mono" for s in speakers.values()})
     bs = seg_cfg["batch_size"]
@@ -326,11 +340,15 @@ def stage_emotions(ctx: StageCtx) -> None:
     def make_row(w, out, pros) -> EmotionPrediction | None:
         if out is None:
             return None
+        fused, src = fuse(temper(out.probabilities, T_lang), tracks[w.speaker].query(w.start, w.end), wa, wt)
+        top = max(fused, key=fused.get)
         return EmotionPrediction(
             org_id=call.org_id, call_id=call.id, segment_id=segs[w.turn_index].id, speaker_id=speakers[w.speaker].id,
             model_id=mrow.id, model_name=mrow.name, model_version=mrow.version, start=round(w.start, 3), end=round(w.end, 3),
-            duration=round(w.duration, 3), emotion=out.emotion, confidence=round(out.confidence, 5),
-            probabilities={k: round(v, 6) for k, v in out.probabilities.items()}, prosody=pros or None)
+            duration=round(w.duration, 3), emotion=top, confidence=round(fused[top], 5),
+            probabilities={k: round(v, 6) for k, v in fused.items()}, prosody=pros or None,
+            sources={**src, "audio_confidence": round(out.confidence, 4), "audio_emotion": out.emotion,
+                     "temperature": T_lang})
 
     if cached is not None:
         log.info("emociones desde caché", extra={"call_id": call.id})
@@ -403,7 +421,8 @@ def stage_satisfaction(ctx: StageCtx) -> None:
         p_sp = [p for p in preds if p.speaker_id == sp.id]
         base = build_baseline([p.prosody for p in p_sp if p.prosody])
         wins = [{"start": p.start, "end": p.end, "probabilities": p.probabilities, "confidence": p.confidence,
-                 "tension": tension_from_prosody(p.prosody or {}, base)} for p in p_sp]
+                 "tension": tension_from_prosody(p.prosody or {}, base),
+                 "agreement": (p.sources or {}).get("agreement")} for p in p_sp]
         utts[label] = [{"start": t.start, "end": t.end, "text": t.text, "sentiment": t.sentiment}
                        for t in trs if t.speaker_id == sp.id]
         wps[label] = sum(len(t.words or []) for t in trs if t.speaker_id == sp.id)
@@ -487,8 +506,15 @@ def stage_report(ctx: StageCtx) -> None:
     warnings = list(call.warnings or [])
     if mrow and mrow.language and call.language and mrow.language != call.language:
         model_q *= aq_cfg.get("language_mismatch_penalty", 0.8)
-        warnings.append(f"El modelo de emociones activo está entrenado para '{mrow.language}' y la llamada está en "
-                        f"'{call.language}': el rendimiento puede ser inferior. Considere un modelo específico del idioma.")
+        txt_cov = float(np.mean([s["metrics"].get("text_coverage") or 0 for s in (call.summary or {}).get("speakers", {}).values()] or [0]))
+        if txt_cov > 0:
+            wa, wt = weights_for(False, cfg["emotion"])
+            warnings.append(f"El modelo de emociones de audio está entrenado para '{mrow.language}' y la llamada está en '{call.language}': "
+                            f"sus probabilidades se aplanaron (medido: en español acierta ~36 % con confianza ~94 %) y se combinaron con la emoción "
+                            f"del texto transcrito (peso {round(100 * wt / (wa + wt))} %). Revise la concordancia audio-texto.")
+        else:
+            warnings.append(f"El modelo de emociones activo está entrenado para '{mrow.language}' y la llamada está en "
+                            f"'{call.language}': el rendimiento puede ser inferior. Considere un modelo específico del idioma.")
     diar_q = cps.get("diarization", {}).get("quality", 0)
     tr_q = 100 * cps.get("transcription", {}).get("mean_confidence", 0)
     comps = {"audio": audio_q, "speech": speech, "segments": segments, "model": model_q, "diarization": diar_q,

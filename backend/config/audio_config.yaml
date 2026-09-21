@@ -64,7 +64,11 @@ diarization:
 
 transcription:
   engine: faster-whisper      # faster-whisper | whisperx
-  model_size: small           # tiny | base | small | medium | large-v3
+  model_size: auto            # auto (GPU: large-v3, CPU: small) | tiny | base | small | medium | large-v3
+  anti_hallucination: true    # umbrales de silencio/compresión/logprob + reintento con temperatura
+  initial_prompt:             # contexto que mejora vocabulario y puntuación (se aplica según el idioma detectado)
+    es: "Conversación telefónica de atención al cliente en español."
+    en: "Customer service phone call."
   compute_type: auto          # auto | int8 | float16 | float32
   language: auto              # auto | es | en | ...
   preferred_language: es      # si la detección es dudosa se prioriza este idioma

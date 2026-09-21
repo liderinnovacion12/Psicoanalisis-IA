@@ -60,11 +60,20 @@ def test_end_to_end_results(client, admin_a, completed_call):
         assert set(e["probabilities"]) == {"angry", "disgust", "fear", "happy", "neutral", "sad", "surprise"}
         assert abs(sum(e["probabilities"].values()) - 1) < 1e-3 and e["model"] and e["model_version"] and e["duration"] > 0
     assert emo[0]["start"] <= emo[1]["start"]
+    # llamada en español + modelo de audio en inglés: se aplana el audio y se fusiona con la emoción del TEXTO (nativa)
+    src = emo[0]["sources"]
+    assert src["weights"]["text"] > src["weights"]["audio"] and src["temperature"] == 7.5
+    with_text = [e for e in emo if e["sources"]["text"]]
+    assert len(with_text) >= 0.6 * len(emo) and all(0 <= e["sources"]["agreement"] <= 1 for e in with_text)
+    cust = [e for e in emo if e["speaker"] == "SPEAKER_00"]                       # el cliente: se queja al inicio y agradece al final
+    assert any(e["emotion"] == "angry" for e in cust[:4]) and any(e["emotion"] == "happy" for e in cust[-3:])
 
     sat = client.get(f"{API}/calls/{cid}/satisfaction", headers=admin_a).json()
     assert set(sat["speakers"]) == {"SPEAKER_00", "SPEAKER_01"} and sat["interaction"]
     for s in sat["speakers"].values():
         assert 0 <= s["score"] <= 100 and 0 <= s["confidence"] <= 1 and s["timeline"] and s["factors"] is not None
+    c = sat["speakers"]["SPEAKER_00"]
+    assert c["final_score"] > c["initial_score"] + 10 and c["metrics"]["text_coverage"] > 0.5      # el guion es «molesto → satisfecho»
     ev = client.get(f"{API}/calls/{cid}/events", headers=admin_a).json()
     assert all({"timestamp", "event_type", "confidence", "label"} <= set(e) for e in ev)
     assert call["interaction"]["talk_time"]["SPEAKER_00"] > 5
@@ -245,3 +254,16 @@ def test_two_voice_mono_is_detected_as_two_and_can_be_forced_to_one(client, admi
 def test_forcing_two_people_on_a_monologue_is_honored(client, admin_a):
     d = detail(client, admin_a, analyze(client, admin_a, MONO_1, speakers="2"))
     assert d["n_speakers"] == 2 and d["checkpoints"]["diarization"]["details"].get("forced") is True
+
+
+def test_text_emotion_models_spanish_and_english():
+    from app.core.config import get_config_store
+    from app.ml.text.emotion_text import TextEmotionAnalyzer
+    a = TextEmotionAnalyzer(get_config_store().defaults("emotion"))
+    top = lambda r: max(r, key=r.get)
+    es = a.analyze_batch(["Estoy muy molesto con el servicio, llevo tres días esperando.", "Muchas gracias, quedó resuelto, excelente atención.",
+                          "Buenos días, gracias por comunicarse con atención al cliente.", "ok"], "es")
+    assert top(es[0]) == "angry" and top(es[1]) == "happy" and top(es[2]) == "neutral" and es[3] is None   # texto muy corto: sin evidencia
+    en = a.analyze_batch(["I am very angry, I have been waiting for three days.", "Thank you so much, this is resolved."], "en")
+    assert top(en[0]) == "angry" and top(en[1]) == "happy"
+    assert a.analyze_batch(["Bonjour, je voudrais de l'aide"], "fr") == [None]                                # idioma sin modelo: no se inventa

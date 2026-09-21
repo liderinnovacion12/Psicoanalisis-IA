@@ -187,6 +187,7 @@ class EmotionPrediction(Base):
     confidence: Mapped[float] = mapped_column(Float)
     probabilities: Mapped[dict] = mapped_column(JSONType)          # probabilidades COMPLETAS
     prosody: Mapped[dict | None] = mapped_column(JSONType, nullable=True)
+    sources: Mapped[dict | None] = mapped_column(JSONType, nullable=True)   # {audio, text, weights, agreement}
     __table_args__ = (Index("ix_emo_call_speaker_start", "call_id", "speaker_id", "start"),)
 
 

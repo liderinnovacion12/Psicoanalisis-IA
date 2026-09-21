@@ -89,7 +89,7 @@ def emotion_out(p: EmotionPrediction, label: str) -> dict:
     return {"id": p.id, "speaker": label, "segment_id": p.segment_id, "start": p.start, "end": p.end,
             "duration": p.duration, "emotion": p.emotion, "confidence": p.confidence,
             "probabilities": p.probabilities, "model": p.model_name, "model_version": p.model_version,
-            "prosody": p.prosody}
+            "prosody": p.prosody, "sources": p.sources}
 
 
 def event_out(e: CriticalEvent, label: str | None) -> dict:

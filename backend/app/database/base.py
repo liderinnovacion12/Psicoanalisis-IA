@@ -92,9 +92,30 @@ def get_db() -> Iterator[Session]:
         s.close()
 
 
+def ensure_columns(eng=None) -> list[str]:
+    """Migración ligera: añade columnas NULLABLE nuevas a tablas existentes (create_all no altera tablas)."""
+    from sqlalchemy import inspect, text
+    from sqlalchemy.schema import CreateColumn
+    eng = eng or get_engine()
+    insp = inspect(eng)
+    added: list[str] = []
+    for table in Base.metadata.sorted_tables:
+        if not insp.has_table(table.name):
+            continue
+        have = {c["name"] for c in insp.get_columns(table.name)}
+        for col in table.columns:
+            if col.name not in have and col.nullable and not col.primary_key:
+                ddl = str(CreateColumn(col).compile(dialect=eng.dialect))
+                with eng.begin() as cx:
+                    cx.execute(text(f"ALTER TABLE {table.name} ADD COLUMN {ddl}"))
+                added.append(f"{table.name}.{col.name}")
+    return added
+
+
 def init_db() -> None:
     from app import models  # noqa: F401  (registra tablas)
     Base.metadata.create_all(get_engine())
+    ensure_columns()
 
 
 __all__ = ["Base", "JSONType", "new_id", "utcnow", "DateTime", "get_db", "session_scope",

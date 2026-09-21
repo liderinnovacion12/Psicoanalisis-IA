@@ -25,7 +25,7 @@ Verificado en este entorno (Windows 11, CPU, sin GPU, sin Docker):
 | UI en navegador real (Edge): login, subida, progreso, resultados, clic en transcripción → salto de audio, modo oscuro, tablet | Prueba de humo con capturas. |
 | Llamada de 60 min sin cargar el audio en memoria | `tests/test_audio.py::test_memory_does_not_grow_with_call_duration` |
 
-**Total de pruebas:** 23 unitarias + 12 API + 10 audio/formatos + 5 pipeline ML + 6 entrenamiento.
+**Total de pruebas:** ~27 unitarias + 12 API + 10 audio/formatos + 9 pipeline ML (audio real, 1 vs 2 personas, fusión) + 6 entrenamiento.
 
 **NO verificado / limitaciones (dicho claramente):**
 
@@ -86,6 +86,31 @@ No equipara emoción con satisfacción. Serie de valencia `v_t = Σ w_e·p_t(e)`
 `score = 50 + 50·clip(sensibilidad · Σwᵢcᵢ/Σwᵢ)`. Devuelve factores con puntos aportados, una **confianza propia** (cobertura + confianza del modelo +
 calidad de audio + texto; penaliza desajuste de idioma) y la evolución temporal. Modos `rules`, `model` (regresor sklearn entrenable), `hybrid`, y
 calibración lineal con satisfacción real.
+
+---------------------------------------------------------------------------------------------------------------------------------
+
+## 3a. Español: qué se optimizó y con qué evidencia
+
+El modelo de emociones de audio base es **inglés**. Se midió con voz en español etiquetada (corpus MESD, CC-BY-4.0; 129 clips de prueba, palabras
+actuadas de ~1 s; reproducible con `python backend/scripts/eval_spanish_emotion.py`, resultados en `docs/eval_spanish_emotion*.json`):
+
+| Modelo de audio en español | Exactitud | Macro-F1 | Confianza media | Error de calibración (ECE) |
+|---|---|---|---|---|
+| Baseline inglés (azar = 17 %) | **36 %** | 0.33 | **94 %** | **0.56** |
+| Baseline con temperatura 7.5 (ajustada en validación) | 36 % | 0.33 | 42 % | **0.05** |
+| Modelo español de MESD (*no se usa por defecto*) | 83 % | 0.80 | 94 % | 0.12 |
+
+* **Lo que se cambió por esta evidencia**: (1) cuando el idioma de la llamada no coincide con el del modelo de audio, se **aplana** su confianza
+  (`language_mismatch_temperature: 7.5`); (2) se añade la **emoción del texto transcrito** con un modelo nativo del idioma
+  (`pysentimiento/robertuito-emotion-analysis` para español, `j-hartmann/emotion-english-distilroberta-base` para inglés) y se **fusiona** con la de audio,
+  con más peso al texto cuando el idioma no coincide (`label_fusion`); (3) se mide y muestra la **concordancia audio–texto**, que baja la confianza si discrepan;
+  (4) Whisper: modelo `auto` (GPU → `large-v3`, CPU → `small`), indicación de idioma (`initial_prompt`), filtros anti-alucinación y colapso de bucles repetidos.
+* **Por qué NO se usa el modelo español de MESD por defecto**: su 83 % es *dentro del mismo corpus* (palabras sueltas actuadas, de estudio, con los mismos
+  hablantes en entrenamiento y prueba). No dice nada de llamadas reales con ruido y emoción espontánea.
+* **Lo que NO está validado (y no se afirma)**: no existen aquí grabaciones **reales** en español con etiquetas. Los pesos de fusión, la temperatura (medida en habla
+  actuada) y los modelos de texto (entrenados con tweets/otros corpus, no con transcripciones de llamadas) son **razonables pero no calibrados con llamadas**.
+  Pruebas de consistencia: en una llamada de ejemplo el texto detecta la queja que el audio inglés no ve. Para cifras reales, etiquete llamadas propias
+  (pantalla *Etiquetado*) y compare los modelos en *Modelos → Comparación*.
 
 ---------------------------------------------------------------------------------------------------------------------------------
 

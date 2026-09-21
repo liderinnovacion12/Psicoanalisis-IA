@@ -22,10 +22,16 @@ def _compute_type(cfg_ct: str, device: str) -> str:
     return "float16" if device == "cuda" else "int8"
 
 
+def resolve_model_size(size: str, device: str) -> str:
+    """'auto': con GPU el modelo grande (mucho más preciso en español); en CPU 'small' (equilibrio precisión/tiempo)."""
+    return ("large-v3" if device == "cuda" else "small") if size == "auto" else size
+
+
 def _load_model(size: str, compute_type: str):
     from faster_whisper import WhisperModel
     s = get_settings()
     device = torch_device(s.device)
+    size = resolve_model_size(size, device)
     ct = _compute_type(compute_type, device)
     key = (size, device, ct)
     if key not in _MODELS:
@@ -81,9 +87,16 @@ class FasterWhisperTranscriber(Transcriber):
                     if progress:
                         progress(100 * (bi + 1) / len(blocks), "Transcribiendo")
                     continue
+                kw = {}
+                if tcfg.get("anti_hallucination", True):
+                    kw.update(no_speech_threshold=0.6, compression_ratio_threshold=2.4, log_prob_threshold=-1.0,
+                              hallucination_silence_threshold=2.0, temperature=[0.0, 0.2, 0.4])
+                prompt = (tcfg.get("initial_prompt") or {}).get(lang or "")
+                if prompt:
+                    kw["initial_prompt"] = prompt              # fija vocabulario/registro (p. ej. atención telefónica en español)
                 segs, _ = model.transcribe(
                     audio, language=lang, word_timestamps=True, beam_size=tcfg["beam_size"],
-                    vad_filter=tcfg["vad_filter"], condition_on_previous_text=False)
+                    vad_filter=tcfg["vad_filter"], condition_on_previous_text=False, **kw)
                 blk = max(b1 - b0, 1e-6)
                 for sg in segs:
                     if progress:                                   # avance real dentro del bloque (los segmentos llegan en orden)
@@ -94,7 +107,7 @@ class FasterWhisperTranscriber(Transcriber):
                         words.append(Word(b0 + w.start, b0 + w.end, w.word, float(w.probability)))
                 if progress:
                     progress(100 * (bi + 1) / len(blocks), "Transcribiendo")
-        return RawTranscript(words, lang, lang_conf, self.name, f"whisper-{tcfg['model_size']}",
+        return RawTranscript(words, lang, lang_conf, self.name, f"whisper-{resolve_model_size(tcfg['model_size'], torch_device(get_settings().device))}",
                              {"blocks": len(blocks)})
 
 

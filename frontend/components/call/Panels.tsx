@@ -38,6 +38,11 @@ export function SpeakerCard({ label, name, idx, s, onRole, roles }: { label: str
         <div><p className="mb-1 font-semibold text-good">Factores que suman</p>{s.factors.positive.length ? s.factors.positive.map((f: any) => <p key={f.key} className="text-muted">+ {f.label} <b className="text-ink">({f.points > 0 ? "+" : ""}{f.points})</b></p>) : <p className="text-muted">—</p>}</div>
         <div><p className="mb-1 font-semibold text-bad">Factores que restan</p>{s.factors.negative.length ? s.factors.negative.map((f: any) => <p key={f.key} className="text-muted">− {f.label} <b className="text-ink">({f.points})</b></p>) : <p className="text-muted">—</p>}</div>
       </div>
+      {(m.agreement != null || m.text_coverage > 0) && (
+        <div className="mt-3 rounded-lg bg-surface2 px-3 py-2 text-xs">
+          <p className="font-medium">Fuentes de la emoción</p>
+          <p className="text-muted">Texto transcrito disponible en {pct(m.text_coverage)} del tiempo · Concordancia audio–texto: <b className={m.agreement != null && m.agreement < 0.4 ? "text-warn" : "text-ink"}>{m.agreement != null ? pct(m.agreement) : "—"}</b>{m.agreement != null && m.agreement < 0.4 ? " (baja: audio y texto discrepan; tome la emoción con cautela)" : ""}</p>
+        </div>)}
       <p className="mt-3 text-[11px] text-muted">Interpretación del modelo: «El modelo estima un nivel de satisfacción de {s.score.toFixed(0)}/100 con confianza {confWord(s.confidence).toLowerCase()}». La confianza del análisis es independiente de la probabilidad de cada emoción.</p>
     </Card>
   );

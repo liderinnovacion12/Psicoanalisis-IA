@@ -1,6 +1,7 @@
 """Interfaz de transcripción + utilidades: bloques cortados en silencios y asignación palabra→hablante."""
 from __future__ import annotations
 
+import re
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -106,6 +107,17 @@ def assign_words_to_speakers(words: list[Word], turns: list[Turn], max_gap: floa
     return out
 
 
+_REPEAT = re.compile(r"(\b[\wáéíóúñü¿?¡!,.\-]+(?:\s+[\wáéíóúñü¿?¡!,.\-]+){0,5}?)(?:\s+\1){3,}", re.IGNORECASE)
+
+
+def collapse_repeats(text: str) -> str:
+    """Whisper a veces entra en bucle repitiendo una frase; se deja una sola aparición (>=4 repeticiones seguidas)."""
+    prev = None
+    while prev != text:
+        prev, text = text, _REPEAT.sub(r"\1", text)
+    return text
+
+
 def group_utterances(assigned: list[tuple[str, Word]], language: str | None, gap: float = 1.2,
                      max_len: float = 25.0) -> list[Utterance]:
     """Agrupa palabras en frases por hablante. Los tokens de Whisper traen un espacio inicial cuando empiezan una
@@ -127,6 +139,6 @@ def group_utterances(assigned: list[tuple[str, Word]], language: str | None, gap
     if cur:
         utts.append(cur)
     for u in utts:
-        u.text = " ".join(u.text.split())
+        u.text = collapse_repeats(" ".join(u.text.split()))
         u.confidence = float(np.mean([w.prob for w in u.words])) if u.words else 0.0
     return [u for u in utts if u.text]

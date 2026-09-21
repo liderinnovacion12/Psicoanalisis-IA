@@ -57,8 +57,9 @@ interpretation:                # rangos configurables
 confidence:
   min_analyzed_seconds: 20     # por debajo, confianza baja
   full_confidence_seconds: 180
-  weights: {model: 0.45, coverage: 0.30, audio_quality: 0.15, text: 0.10}
-  language_mismatch_penalty: 0.6   # factor si el idioma del modelo emocional difiere del de la llamada
+  weights: {model: 0.35, coverage: 0.25, audio_quality: 0.15, text: 0.10, agreement: 0.15}
+  language_mismatch_penalty: 0.6   # factor si el idioma del modelo emocional difiere del de la llamada y NO hay texto
+  language_mismatch_penalty_with_text: 0.85   # ídem, pero con emoción de texto nativa en >= 50 % del tiempo
 
 events:
   min_separation_seconds: 45   # separación mínima entre eventos del mismo tipo/hablante

@@ -25,6 +25,7 @@ class Series:
     text_score: np.ndarray           # sentimiento textual -1..1 (nan si no hay texto)
     text_frust: np.ndarray           # cue de frustración 0..1 (nan si no hay texto)
     dt: float = 1.0
+    agree: np.ndarray | None = None  # concordancia audio-texto 0..1 (nan si no hay texto)
 
     @property
     def n(self) -> int:
@@ -33,7 +34,7 @@ class Series:
     def slice(self, t0: float, t1: float) -> "Series":
         m = (self.t >= t0) & (self.t < t1)
         return Series(self.speaker, self.labels, self.t[m], self.P[m], self.conf[m], self.tension[m],
-                      self.text_score[m], self.text_frust[m], self.dt)
+                      self.text_score[m], self.text_frust[m], self.dt, None if self.agree is None else self.agree[m])
 
 
 def build_series(speaker: str, labels: list[str], windows: list[dict], utterances: list[dict],
@@ -46,6 +47,7 @@ def build_series(speaker: str, labels: list[str], windows: list[dict], utterance
     n = int(np.ceil(t_end / dt)) + 1
     P = np.zeros((n, K)); cnt = np.zeros(n); conf = np.zeros(n)
     ten = np.zeros(n); tcnt = np.zeros(n)
+    ag = np.zeros(n); acnt = np.zeros(n)
     for w in windows:
         i0 = int(np.floor(w["start"] / dt))
         i1 = max(i0 + 1, int(np.ceil(w["end"] / dt)))
@@ -56,6 +58,9 @@ def build_series(speaker: str, labels: list[str], windows: list[dict], utterance
         if w.get("tension") is not None:
             ten[i0:i1] += w["tension"]
             tcnt[i0:i1] += 1
+        if w.get("agreement") is not None:
+            ag[i0:i1] += w["agreement"]
+            acnt[i0:i1] += 1
     m = cnt > 0
     P[m] /= cnt[m, None]
     conf[m] /= cnt[m]
@@ -72,7 +77,10 @@ def build_series(speaker: str, labels: list[str], windows: list[dict], utterance
         # peso de confianza: el texto de baja evidencia apenas mueve la señal
         ts[i0:i1] = s.get("score", 0.0) * min(1.0, 0.4 + s.get("confidence", 0.0))
         tf[i0:i1] = s.get("frustration", 0.0)
-    return Series(speaker, labels, t[m], P[m], conf[m], tension[m], ts[m], tf[m], dt)
+    agree = np.full(n, np.nan)
+    am = acnt > 0
+    agree[am] = ag[am] / acnt[am]
+    return Series(speaker, labels, t[m], P[m], conf[m], tension[m], ts[m], tf[m], dt, agree[m])
 
 
 def smooth(x: np.ndarray, k: int) -> np.ndarray:

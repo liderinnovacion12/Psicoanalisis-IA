@@ -12,6 +12,10 @@ fp16_on_cuda: true
 max_window_seconds: 30                  # ventana máxima segura por inferencia
 temperature: 1.0                        # temperature scaling de los logits (>1 suaviza; el baseline suele ser sobreconfiado)
 cache_predictions: true
+# Si el idioma de la llamada NO coincide con el del modelo de audio, se aplana su confianza (temperature scaling).
+# Medido con voz en español (MESD, 129 clips de prueba): el baseline inglés acierta 36 % con 94 % de confianza media (ECE 0.56);
+# con T=7.5 (ajustada en VALIDATION) la confianza media baja a ~42 % y el ECE en TEST a 0.05. Corrección medida en habla ACTUADA, no en llamadas reales.
+language_mismatch_temperature: 7.5
 
 confidence_levels:                      # etiqueta cualitativa de "Confianza del modelo"
   high: 0.75
@@ -29,6 +33,20 @@ fusion:
   audio_weight: 1.0
   prosody_weight: 0.35
   text_weight: 0.5
+
+# Emoción a partir del TEXTO transcrito (modelo nativo del idioma) y fusión con el audio
+text_emotion:
+  enabled: true
+  models:
+    es: pysentimiento/robertuito-emotion-analysis
+    en: j-hartmann/emotion-english-distilroberta-base
+  min_words: 3
+  batch_size: 32
+  max_length: 256
+
+label_fusion:                          # pesos audio/texto por ventana (configuración; NO calibrados con llamadas reales)
+  same_language: {audio: 0.7, text: 0.3}       # el modelo de audio fue entrenado en el idioma de la llamada
+  language_mismatch: {audio: 0.35, text: 0.65} # modelo de audio en otro idioma (p. ej. inglés vs. español)
 
 text_sentiment:
   engine: lexicon                       # lexicon | hf

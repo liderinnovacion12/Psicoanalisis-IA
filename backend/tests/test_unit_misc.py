@@ -143,3 +143,62 @@ def test_embedding_decision_one_vs_two_speakers():
     assert looks_like_two_speakers(s2, DEFAULTS) and s2["gap"] > 0.25
     tiny = norm(np.vstack([base + 0.1 * rng.normal(size=(58, 512)) / np.sqrt(512), other[None] * np.ones((2, 1))]))
     assert not looks_like_two_speakers(cluster_two(tiny)[1], DEFAULTS)                          # 2 ventanas atípicas no son una persona
+
+
+# ---- fusión audio+texto, temperatura, migración de columnas, repeticiones ---------------------------------------
+def test_temperature_scaling_matches_softmax_of_scaled_logits():
+    from app.ml.emotion.fusion import temper
+    z = np.array([4.0, 1.0, -1.0, 0.5])
+    p = np.exp(z) / np.exp(z).sum()
+    for T in (0.5, 2.0, 7.5):
+        want = np.exp(z / T) / np.exp(z / T).sum()
+        got = temper({str(i): float(v) for i, v in enumerate(p)}, T)
+        assert np.allclose([got[str(i)] for i in range(4)], want, atol=1e-9)
+    hot = temper({"a": 0.99, "b": 0.01}, 7.5)
+    assert hot["a"] < 0.7 and max(hot, key=hot.get) == "a"                      # aplana pero no cambia la emoción principal
+
+
+def test_fusion_weights_agreement_and_language():
+    from app.ml.emotion.fusion import TextTrack, fuse, weights_for
+    from app.core.config import get_config_store
+    cfg = get_config_store().defaults("emotion")
+    assert weights_for(True, cfg)[0] > weights_for(True, cfg)[1] and weights_for(False, cfg)[1] > weights_for(False, cfg)[0]
+    audio = {"angry": 0.1, "happy": 0.7, "neutral": 0.2}
+    text = {"angry": 0.9, "happy": 0.0, "neutral": 0.1, "sad": 0.0}               # 'sad' no existe en este modelo de audio
+    f, src = fuse(audio, text, 0.35, 0.65)
+    assert abs(sum(f.values()) - 1) < 1e-9 and max(f, key=f.get) == "angry"       # con desajuste de idioma manda el texto
+    assert src["weights"]["text"] > src["weights"]["audio"] and 0 <= src["agreement"] <= 1 and src["agreement"] < 0.5
+    f2, src2 = fuse(audio, text, 0.7, 0.3)
+    assert f2["angry"] < f["angry"]                                               # con el mismo idioma pesa menos el texto
+    same = fuse({"angry": 0.8, "happy": 0.2}, {"angry": 0.9, "happy": 0.1}, 0.5, 0.5)[1]["agreement"]
+    assert same > 0.9                                                             # coinciden -> concordancia alta
+    f3, src3 = fuse(audio, None, 0.35, 0.65)                                      # sin texto: solo audio, sin inventar
+    assert f3 == audio and src3["text"] is None and src3["agreement"] is None
+    tr = TextTrack([(0.0, 5.0, {"angry": 1.0}), (5.0, 10.0, {"happy": 1.0})])
+    assert tr.query(1, 4)["angry"] == 1.0 and abs(tr.query(3, 7)["angry"] - 0.5) < 1e-9 and tr.query(20, 25) is None
+
+
+def test_ensure_columns_adds_missing_nullable_columns(tmp_path):
+    from sqlalchemy import create_engine, inspect, text
+    from app.database.base import ensure_columns
+    import app.models  # noqa: F401
+    eng = create_engine(f"sqlite:///{tmp_path / 'old.db'}")
+    with eng.begin() as cx:                                                        # esquema antiguo: sin la columna `sources`
+        cx.execute(text("CREATE TABLE emotion_predictions (id VARCHAR(32) PRIMARY KEY, org_id VARCHAR(32), call_id VARCHAR(32), "
+                        "speaker_id VARCHAR(32), start FLOAT, \"end\" FLOAT, duration FLOAT, emotion VARCHAR(64), confidence FLOAT, "
+                        "probabilities JSON, prosody JSON, segment_id VARCHAR(32), model_id VARCHAR(32), model_name VARCHAR(200), "
+                        "model_version VARCHAR(100))"))
+    added = ensure_columns(eng)
+    assert "emotion_predictions.sources" in added
+    assert "sources" in {c["name"] for c in inspect(eng).get_columns("emotion_predictions")}
+    assert ensure_columns(eng) == [] or "emotion_predictions.sources" not in ensure_columns(eng)   # idempotente
+
+
+def test_whisper_repeat_loops_are_collapsed_and_model_size_auto():
+    from app.ml.transcription.base import collapse_repeats
+    from app.ml.transcription.whisper import resolve_model_size
+    assert collapse_repeats("Gracias por su llamada gracias por su llamada gracias por su llamada gracias por su llamada hasta luego") \
+        == "Gracias por su llamada hasta luego"
+    assert collapse_repeats("Sí, sí, estoy de acuerdo con usted.") == "Sí, sí, estoy de acuerdo con usted."     # repetición normal intacta
+    assert resolve_model_size("auto", "cuda") == "large-v3" and resolve_model_size("auto", "cpu") == "small"
+    assert resolve_model_size("medium", "cpu") == "medium"

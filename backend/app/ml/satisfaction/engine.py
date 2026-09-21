@@ -178,10 +178,15 @@ class SatisfactionEngine:
         model = float(np.clip((float(np.mean(s.conf)) - 0.3) / 0.5, 0, 1))
         q = 0.7 if audio_quality is None else float(np.clip(audio_quality / 100, 0, 1))
         txt = float(np.mean(~np.isnan(s.text_score))) if s.n else 0.0
-        parts = {"model": model, "coverage": float(cover), "audio_quality": q, "text": txt}
-        conf = sum(w[k] * parts[k] for k in parts) / sum(w.values())
+        ag = s.agree[~np.isnan(s.agree)] if s.agree is not None else np.zeros(0)
+        text_cov = float(len(ag) / s.n) if s.n else 0.0
+        # concordancia audio-texto: si audio y texto discrepan, la confianza baja; sin texto no aporta información (0.5)
+        agreement = float(np.clip(np.mean(ag), 0, 1)) if len(ag) else 0.5
+        parts = {"model": model, "coverage": float(cover), "audio_quality": q, "text": txt, "agreement": agreement}
+        conf = sum(w.get(k, 0.0) * parts[k] for k in parts) / sum(w.get(k, 0.0) for k in parts)
         if language_mismatch:
-            conf *= cc.get("language_mismatch_penalty", 0.6)
+            # con texto en el idioma de la llamada hay una segunda evidencia nativa: la penalización es menor
+            conf *= cc.get("language_mismatch_penalty_with_text", 0.85) if text_cov >= 0.5 else cc.get("language_mismatch_penalty", 0.6)
             parts["language_mismatch"] = True
         return float(np.clip(conf, 0, 1)), {k: (round(v, 3) if isinstance(v, float) else v) for k, v in parts.items()}
 
@@ -258,5 +263,7 @@ class SatisfactionEngine:
             "stability": round(float(comps.get("_stability_raw", 0.0)), 4),
             "mean_probabilities": {l: round(float(p), 4) for l, p in zip(s.labels, mean_p)},
             "analyzed_seconds": round(s.n * s.dt, 1),
+            "text_coverage": round(float(np.mean(~np.isnan(s.agree))), 3) if s.agree is not None and s.n else 0.0,
+            "agreement": (round(float(np.nanmean(s.agree)), 3) if s.agree is not None and np.any(~np.isnan(s.agree)) else None),
             "mean_model_confidence": round(float(np.mean(s.conf)), 4),
         }
