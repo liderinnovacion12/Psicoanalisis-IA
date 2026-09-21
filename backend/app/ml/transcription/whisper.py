@@ -84,7 +84,10 @@ class FasterWhisperTranscriber(Transcriber):
                 segs, _ = model.transcribe(
                     audio, language=lang, word_timestamps=True, beam_size=tcfg["beam_size"],
                     vad_filter=tcfg["vad_filter"], condition_on_previous_text=False)
+                blk = max(b1 - b0, 1e-6)
                 for sg in segs:
+                    if progress:                                   # avance real dentro del bloque (los segmentos llegan en orden)
+                        progress(100 * (bi + min(sg.end / blk, 1.0)) / len(blocks), "Transcribiendo")
                     if getattr(sg, "no_speech_prob", 0) > 0.85 and getattr(sg, "avg_logprob", 0) < -1.0:
                         continue
                     for w in (sg.words or []):

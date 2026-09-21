@@ -91,6 +91,8 @@ export default function Analizar() {
   const [callId, setCallId] = useState("");
   const [status, setStatus] = useState<any>(null);
   const [err, setErr] = useState("");
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
 
   const reset = () => { setPhase("idle"); setFile(null); setCallId(""); setStatus(null); setErr(""); setPctUp(0); if (typeof window !== "undefined") window.history.replaceState(null, "", "/"); };
 
@@ -178,7 +180,7 @@ export default function Analizar() {
               <li key={s.key} className="flex items-center gap-3 text-sm">
                 <span className="w-5 text-center">{s.state === "COMPLETED" ? "✓" : s.state === "FAILED" ? "✗" : s.state === "RUNNING" ? "…" : "·"}</span>
                 <span className="w-32 font-medium">{s.label}</span>
-                <span className="text-xs text-muted">{s.state === "RUNNING" ? `${Math.round(s.progress)}% ${s.message || ""}` : s.state === "COMPLETED" ? "Completado" : s.state === "FAILED" ? "Falló" : "Pendiente"}</span>
+                <span className="text-xs text-muted">{s.state === "RUNNING" ? `en curso${s.started_at ? ` · ${Math.max(0, Math.round((now - new Date(s.started_at).getTime()) / 1000))} s` : ""}${s.progress > 0 ? ` · ${Math.round(s.progress)}%` : ""}` : s.state === "COMPLETED" ? "Completado" : s.state === "FAILED" ? "Falló" : "Pendiente"}</span>
               </li>))}
           </ul>
         </Card>)}

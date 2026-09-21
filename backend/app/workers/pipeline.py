@@ -539,7 +539,7 @@ def run_stage(call_id: str, stage: str) -> bool:
             call.config_snapshot = cfg                                  # la configuración usada queda registrada
         call.status = STAGE_STATUS[stage].value
         call.error_code = None
-        set_checkpoint(db, call, stage, status="RUNNING", progress=0)
+        set_checkpoint(db, call, stage, status="RUNNING", progress=0, started_at=datetime.now(timezone.utc).isoformat())
         db.commit()
         ctx = StageCtx(db, call, stage, cfg, work_dir(call_id))
         t0 = time.time()

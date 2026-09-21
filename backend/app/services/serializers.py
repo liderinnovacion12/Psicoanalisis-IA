@@ -32,7 +32,7 @@ def stages_payload(call: Call) -> list[dict]:
         cp = cps.get(st, {})
         state = cp.get("status", "PENDING")
         out.append({"key": st, "label": STAGE_LABELS[st], "state": state, "progress": cp.get("progress", 100 if state == "COMPLETED" else 0),
-                    "message": cp.get("message"), "seconds": cp.get("seconds")})
+                    "message": cp.get("message"), "seconds": cp.get("seconds"), "started_at": cp.get("started_at")})
     return out
 
 
