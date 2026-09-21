@@ -12,5 +12,6 @@ export default {
     if (DEMO === "1") return [];
     return [{ source: "/api/v1/:path*", destination: `${BACKEND}/api/v1/:path*` }];
   },
-  experimental: { proxyTimeout: 30 * 60 * 1000 },
+  // Sin esto el proxy de Next corta las subidas a 10 MB (las llamadas largas pesan cientos de MB).
+  experimental: { proxyTimeout: 30 * 60 * 1000, middlewareClientMaxBodySize: "4gb" },
 };

@@ -3,3 +3,4 @@
 *.mp3 binary
 *.wav binary
 *.png binary
+*.sh text eol=lf
