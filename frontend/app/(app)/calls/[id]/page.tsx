@@ -64,6 +64,9 @@ export default function CallDetail({ params }: { params: Promise<{ id: string }>
   async function reanalyze() {
     try { await api(`/calls/${id}/reanalyze`, { method: "POST", query: { from_stage: "emotion_analysis" } }); toast("ok", "Re-análisis con el modelo activo en cola."); loadCall(); } catch (e: any) { toast("err", e.message); }
   }
+  async function setSpeakers(k: string) {
+    try { await api(`/calls/${id}/reanalyze`, { method: "POST", query: { speakers: k } }); toast("ok", "Re-análisis en cola con el nuevo número de personas."); setStatus(null); loadCall(); } catch (e: any) { toast("err", e.message); }
+  }
   async function toggleTrain(v: boolean) {
     try { await api(`/calls/${id}`, { method: "PATCH", body: { allow_training: v } }); loadCall(); toast("ok", v ? "La llamada podrá usarse para mejorar el modelo." : "La llamada NO se usará para entrenamiento."); } catch (e: any) { toast("err", e.message); }
   }
@@ -123,12 +126,12 @@ export default function CallDetail({ params }: { params: Promise<{ id: string }>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <Stat label="Calidad del análisis" value={`${num(q?.score)}/100`} hint={q?.low ? "Puede haber menor precisión" : "Estimación heurística"} tone={q?.low ? "text-warn" : undefined} />
           <Stat label="Calidad del audio" value={`${num(aq?.score)}/100`} hint={`SNR ~${num(aq?.levels?.snr_db)} dB · voz ${Math.round((aq?.speech_ratio || 0) * 100)}%`} />
-          <Stat label="Diarización" value={`${num(call.checkpoints?.diarization?.quality)}/100`} hint={`Motor: ${call.diarization_mode}`} />
+          {call.n_speakers === 1 ? <Stat label="Personas" value="1" hint={call.options?.speakers === "1" ? "indicado por usted" : "detectado automáticamente"} /> : <Stat label="Diarización" value={`${num(call.checkpoints?.diarization?.quality)}/100`} hint={`Motor: ${call.diarization_mode}`} />}
           <Stat label="Transcripción" value={`${num((call.checkpoints?.transcription?.mean_confidence || 0) * 100)}/100`} hint={`${call.checkpoints?.transcription?.words ?? 0} palabras`} />
-          <Stat label="Interacción" value={inter?.variation != null ? `${inter.variation > 0 ? "+" : ""}${inter.variation.toFixed(0)}` : "—"} hint={inter ? `${inter.initial} → ${inter.final}` : undefined} tone={inter?.variation > 6 ? "text-good" : inter?.variation < -6 ? "text-bad" : undefined} />
+          <Stat label={call.n_speakers === 1 ? "Evolución" : "Interacción"} value={inter?.variation != null ? `${inter.variation > 0 ? "+" : ""}${inter.variation.toFixed(0)}` : "—"} hint={inter ? `${inter.initial} → ${inter.final}` : undefined} tone={inter?.variation > 6 ? "text-good" : inter?.variation < -6 ? "text-bad" : undefined} />
         </div>
 
-        {call.diarization_mode === "spectral" && <Notice tone="warn">La diarización utilizada es el <b>método de respaldo</b> (sin pyannote), de menor precisión. Configure <code>HF_TOKEN</code> para usar pyannote.audio, o use audio estéreo con una persona por canal.</Notice>}
+        {call.diarization_mode === "spectral" && call.n_speakers !== 1 && <Notice tone="warn">La diarización utilizada es el <b>método de respaldo</b> (sin pyannote), de menor precisión. Configure <code>HF_TOKEN</code> para usar pyannote.audio, o use audio estéreo con una persona por canal.</Notice>}
 
         {call.summary?.executive_summary && (
           <Card title="Resumen" subtitle="Separación entre datos observados e interpretación del modelo">
@@ -136,9 +139,9 @@ export default function CallDetail({ params }: { params: Promise<{ id: string }>
             {inter && <p className="mt-2 text-sm font-medium text-brand">{inter.message}</p>}
           </Card>)}
 
-        <div className="grid gap-5 xl:grid-cols-2">
+        <div className={`grid gap-5 ${call.n_speakers === 1 ? "max-w-3xl" : "xl:grid-cols-2"}`}>
           <SpeakerCard label="SPEAKER_00" name={names.SPEAKER_00} idx={0} s={sp.SPEAKER_00} onRole={can("ANALYST") && s0 ? (r) => setRole(s0, r) : undefined} roles={{ key: "r0", label: "", cur: s0?.role || "other" }} />
-          <SpeakerCard label="SPEAKER_01" name={names.SPEAKER_01} idx={1} s={sp.SPEAKER_01} onRole={can("ANALYST") && s1 ? (r) => setRole(s1, r) : undefined} roles={{ key: "r1", label: "", cur: s1?.role || "other" }} />
+          {s1 && <SpeakerCard label="SPEAKER_01" name={names.SPEAKER_01} idx={1} s={sp.SPEAKER_01} onRole={can("ANALYST") && s1 ? (r) => setRole(s1, r) : undefined} roles={{ key: "r1", label: "", cur: s1?.role || "other" }} />}
         </div>
 
         {data ? (<>
@@ -179,6 +182,9 @@ export default function CallDetail({ params }: { params: Promise<{ id: string }>
                   <h4 className="font-semibold">Privacidad y entrenamiento</h4>
                   <label className="flex items-start gap-2"><input type="checkbox" checked={call.allow_training} disabled={!can("ANALYST")} onChange={(e) => toggleTrain(e.target.checked)} className="mt-0.5" />
                     <span>Permitir utilizar esta llamada para mejorar el modelo<br /><span className="text-xs text-muted">Desactivado por defecto. Solo las llamadas habilitadas pueden agregarse a datasets de entrenamiento.</span></span></label>
+                  <h4 className="pt-2 font-semibold">Personas en la llamada</h4>
+                  <p className="text-xs text-muted">Se analizó {call.n_speakers === 1 ? "1 persona" : "2 personas"} ({call.options?.speakers && call.options.speakers !== "auto" ? "indicado por usted" : "detección automática"}). Si no es correcto, vuelva a analizar:</p>
+                  {can("ANALYST") && <div className="flex flex-wrap gap-2">{[["auto", "Automático"], ["1", "1 persona"], ["2", "2 personas"]].map(([k, l]) => <Button key={k} size="sm" onClick={() => setSpeakers(k)}>{l}</Button>)}</div>}
                   <h4 className="pt-2 font-semibold">Datos técnicos</h4>
                   <p className="text-xs text-muted">Audio original: {call.sample_rate} Hz · {call.channels} canal(es) · {Math.round((call.bitrate || 0) / 1000)} kbps · Modo: {aq?.channel_layout?.is_stereo_split ? "estéreo con un hablante por canal" : "mono / mezcla (diarización)"} · VAD: {aq?.vad_engine}</p>
                   {call.retention_until && <p className="text-xs text-muted">Se eliminará automáticamente el {dateTime(call.retention_until)} (política de retención).</p>}

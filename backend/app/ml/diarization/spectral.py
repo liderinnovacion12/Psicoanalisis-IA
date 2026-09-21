@@ -1,8 +1,13 @@
-"""Diarización de respaldo sin modelos externos (mono): clustering de 2 hablantes sobre MFCC.
+"""Diarización de respaldo sin modelos externos (mono): decide si hay 1 o 2 hablantes y, si hay 2, los separa por MFCC.
 
 ES REAL PERO DE PRECISIÓN LIMITADA: sirve cuando no hay token de Hugging Face / pyannote. Para
 resultados de calidad use `pyannote` o audio estéreo con un hablante por canal. La calidad
 reportada se limita (<= 60) y la UI muestra una advertencia.
+
+Detección de 1 vs 2 hablantes (automática): tras agrupar en 2 clusters se exige que la separación sea real:
+    silhouette (etiquetas suavizadas) >= `min_silhouette`  Y  separación de centroides >= `min_separation`.
+Umbrales calibrados con audio real (ver docs/README): una voz -> silhouette ≈ 0.02-0.03, sep ≈ 0.3-0.5;
+dos voces -> silhouette ≈ 0.20, sep ≈ 1.1. Con pocos datos de calibración, el usuario puede FORZAR 1 o 2 personas.
 """
 from __future__ import annotations
 
@@ -17,6 +22,8 @@ from app.ml.diarization.base import (DiarizationResult, Diarizer, Turn, SPEAKERS
 
 log = get_logger(__name__)
 WIN, HOP = 1.5, 0.75
+MIN_SILHOUETTE = 0.12
+MIN_SEPARATION = 0.75
 
 
 def _features(path: Path, vad: list[tuple[float, float]], sr: int = 16000, block_s: float = 600):
@@ -46,45 +53,73 @@ def _features(path: Path, vad: list[tuple[float, float]], sr: int = 16000, block
     return np.array(feats), times
 
 
+def cluster_stats(Z: np.ndarray, labels: np.ndarray) -> dict:
+    """silhouette y separación de centroides (en unidades de dispersión intra-cluster) para 2 clusters."""
+    from sklearn.metrics import silhouette_score
+    if len(set(labels)) < 2 or min(np.bincount(labels)) < 2:
+        return {"silhouette": 0.0, "separation": 0.0, "minor_share": 0.0}
+    rng = np.random.default_rng(0)
+    idx = rng.choice(len(Z), size=min(len(Z), 2000), replace=False)
+    try:
+        sil = float(silhouette_score(Z[idx], labels[idx])) if len(set(labels[idx])) == 2 else 0.0
+    except Exception:
+        sil = 0.0
+    c0, c1 = Z[labels == 0].mean(0), Z[labels == 1].mean(0)
+    within = np.sqrt((Z[labels == 0].var(0).mean() + Z[labels == 1].var(0).mean()) / 2) + 1e-9
+    sep = float(np.linalg.norm(c0 - c1) / (within * np.sqrt(Z.shape[1])))
+    return {"silhouette": sil, "separation": sep, "minor_share": float(min(labels.mean(), 1 - labels.mean()))}
+
+
+def looks_like_two_speakers(stats: dict) -> bool:
+    return stats["silhouette"] >= MIN_SILHOUETTE and stats["separation"] >= MIN_SEPARATION
+
+
 class SpectralDiarizer(Diarizer):
     name = "spectral"
 
-    def diarize(self, work_dir: Path, files: dict[str, str], vad: dict, cfg: dict, progress=None):
+    def diarize(self, work_dir: Path, files: dict[str, str], vad: dict, cfg: dict, progress=None, hint: int | None = None):
         from sklearn.cluster import KMeans
-        from sklearn.metrics import silhouette_score
         path = work_dir / files["mono"]
         segs = vad.get("mono", [])
-        X, times = _features(path, segs)
         seg_cfg = cfg.get("segmentation", {})
+        gap, min_turn = seg_cfg.get("merge_gap", 0.8), seg_cfg.get("min_turn", 0.6)
         warnings = ["Diarización de respaldo (sin pyannote): precisión limitada. Configure HF_TOKEN para "
                     "utilizar pyannote.audio."]
+
+        def single(reason: str, stats: dict | None = None) -> DiarizationResult:
+            turns = merge_turns([Turn(SPEAKERS[0], s, e) for s, e in segs], gap, min_turn)
+            return DiarizationResult(turns, self.name, 1, 100.0, [], {"single_speaker": True, "reason": reason, **(stats or {})})
+
+        if hint == 1:
+            return single("indicado por el usuario")
+        if progress:
+            progress(5, "Extrayendo características de voz")
+        X, times = _features(path, segs)
         if len(X) < 4:
-            t = [Turn(SPEAKERS[0], s, e) for s, e in segs]
-            return DiarizationResult(merge_turns(t, seg_cfg.get("merge_gap", 0.8)), self.name, 1, 20.0,
-                                     warnings + ["Muy poca voz para separar hablantes."], {})
+            r = single("muy poca voz para separar hablantes")
+            r.warnings = warnings + ["Muy poca voz para separar hablantes; se analiza como una sola persona."]
+            return r
         mu, sd = X.mean(0), X.std(0) + 1e-6
         Z = (X - mu) / sd
-        km = KMeans(n_clusters=2, n_init=10, random_state=0).fit(Z)
-        labels = km.labels_.copy()
-        # suavizado temporal (mediana móvil de 5 ventanas)
-        k = 5
+        labels = KMeans(n_clusters=2, n_init=10, random_state=0).fit(Z).labels_.copy()
+        k = 5                                                       # suavizado temporal (mediana móvil de 5 ventanas)
         pad = np.pad(labels, k // 2, mode="edge")
         labels = np.array([int(np.median(pad[i:i + k]) > 0.5) for i in range(len(labels))])
-        sample = np.random.default_rng(0).choice(len(Z), size=min(len(Z), 2000), replace=False)
-        try:
-            sil = float(silhouette_score(Z[sample], labels[sample])) if len(set(labels[sample])) == 2 else 0.0
-        except Exception:
-            sil = 0.0
+        stats = cluster_stats(Z, labels)
+        if progress:
+            progress(60, "Separando hablantes")
+        if hint != 2 and not looks_like_two_speakers(stats):
+            return single("no se detectó una segunda voz distinta", {k_: round(v, 4) for k_, v in stats.items()})
+
         # ventanas -> turnos (centro de cada ventana +- hop/2), recortados al VAD
         raw: list[Turn] = []
         for (t0, t1), lab in zip(times, labels):
             c = (t0 + t1) / 2
             raw.append(Turn(f"S{lab}", c - HOP / 2, c + HOP / 2))
         raw = merge_turns(raw, 0.05)
-        vad_arr = segs
         clipped: list[Turn] = []
         for t in raw:
-            for s, e in vad_arr:
+            for s, e in segs:
                 if e <= t.start:
                     continue
                 if s >= t.end:
@@ -97,8 +132,9 @@ class SpectralDiarizer(Diarizer):
             first.setdefault(t.speaker, len(first))
         for t in clipped:
             t.speaker = SPEAKERS[first[t.speaker]] if first[t.speaker] < 2 else SPEAKERS[1]
-        turns = merge_turns(clipped, seg_cfg.get("merge_gap", 0.8), seg_cfg.get("min_turn", 0.6))
+        turns = merge_turns(clipped, gap, min_turn)
         mark_overlaps(turns)
-        quality = round(float(np.clip((sil + 0.1) / 0.6, 0, 1)) * 60, 1)   # techo 60 (respaldo)
+        quality = round(float(np.clip((stats["silhouette"] + 0.1) / 0.6, 0, 1)) * 60, 1)   # techo 60 (respaldo)
         return DiarizationResult(turns, self.name, len({t.speaker for t in turns}), quality, warnings,
-                                 {"silhouette": round(sil, 4), "windows": int(len(X))})
+                                 {**{k_: round(v, 4) for k_, v in stats.items()}, "windows": int(len(X)),
+                                  "forced": hint == 2})

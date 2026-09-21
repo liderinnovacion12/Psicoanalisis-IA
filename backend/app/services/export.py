@@ -36,7 +36,7 @@ def gather(db: Session, call: Call, redact: bool = False, roles_labels: dict | N
             sat["speakers"][lm[r.speaker_id]] = d
     return {
         "call": ser.call_detail(call, roles_labels),
-        "speakers": [ser.speaker_out(s, roles_labels) for s in call.speakers],
+        "speakers": [ser.speaker_out(s, roles_labels, len(call.speakers) == 1) for s in call.speakers],
         "segments": [{"speaker": lm[s.speaker_id], "start": s.start, "end": s.end, "overlap": s.overlap, "source": s.source} for s in segs],
         "transcription": [ser.transcription_out(t, redact, lm[t.speaker_id]) for t in trs],
         "emotions": [ser.emotion_out(p, lm[p.speaker_id]) for p in emos],

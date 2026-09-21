@@ -53,7 +53,7 @@ def _load_pipeline(model: str):
 class PyannoteDiarizer(Diarizer):
     name = "pyannote"
 
-    def diarize(self, work_dir: Path, files: dict[str, str], vad: dict, cfg: dict, progress=None):
+    def diarize(self, work_dir: Path, files: dict[str, str], vad: dict, cfg: dict, progress=None, hint: int | None = None):
         import torch
         d = cfg["diarization"]
         pipe = _load_pipeline(d["pyannote_model"])
@@ -69,7 +69,7 @@ class PyannoteDiarizer(Diarizer):
                 t1 = min(dur, t0 + chunk_s)
                 wav = rd.read(t0, t1)
                 inp = {"waveform": torch.from_numpy(wav).unsqueeze(0), "sample_rate": sr}
-                out = pipe(inp, min_speakers=max(1, d["expected_speakers"]), max_speakers=d["max_speakers_probe"],
+                out = pipe(inp, min_speakers=2 if hint == 2 else 1, max_speakers=1 if hint == 1 else d["max_speakers_probe"],
                            return_embeddings=True)
                 if hasattr(out, "speaker_diarization"):          # pyannote 4.x
                     diar, emb = out.speaker_diarization, getattr(out, "speaker_embeddings", None)

@@ -178,3 +178,64 @@ def test_resume_from_checkpoint_after_failure(client, monkeypatch):
     assert len(mine) == len(set(mine)) and len(mine) == c.checkpoints["emotion_analysis"]["valid"] > n_before   # sin duplicados
     assert c.model_id == m.id
     db.close()
+
+
+# ---- una persona vs dos personas (audio mono) ---------------------------------------------------------------
+MONO_1 = EXAMPLES / "monologo_ejemplo_una_persona.wav"      # una sola voz (TTS)
+MONO_2 = EXAMPLES / "llamada_ejemplo_mono.wav"              # dos voces mezcladas en un canal (TTS)
+
+
+def analyze(client, headers, path, speakers=None):
+    data = {"speakers": speakers} if speakers else {}
+    with open(path, "rb") as f:
+        r = client.post(f"{API}/calls/upload", headers=headers, files={"file": (path.name, f)}, data=data)
+    assert r.status_code == 201, r.text
+    cid = r.json()["id"]
+    assert wait_completed(client, headers, cid)["status"] == "COMPLETED"
+    return cid
+
+
+def detail(client, headers, cid):
+    return client.get(f"{API}/calls/{cid}", headers=headers).json()
+
+
+@pytest.mark.skipif(not MONO_1.exists(), reason="falta el monólogo de ejemplo")
+def test_single_voice_audio_is_analyzed_as_one_person(client, admin_a):
+    d = detail(client, admin_a, analyze(client, admin_a, MONO_1))
+    assert d["n_speakers"] == 1 and [s["label"] for s in d["speakers"]] == ["SPEAKER_00"]
+    assert d["speakers"][0]["name"] == "Persona"                                   # no «Persona 1»
+    assert set(d["summary"]["speakers"]) == {"SPEAKER_00"} and d["satisfaction_p1"] is not None and d["satisfaction_p2"] is None
+    assert "A nivel de interacción" not in d["summary"]["executive_summary"]
+    assert d["summary"]["interaction"]["participants"] == 1 and d["checkpoints"]["diarization"]["n_speakers"] == 1
+    assert "diarization" not in d["analysis_quality_detail"]["components"]         # no penaliza ni premia
+    cid = d["id"]
+    sat = client.get(f"{API}/calls/{cid}/satisfaction", headers=admin_a).json()
+    assert set(sat["speakers"]) == {"SPEAKER_00"} and sat["interaction"] is None
+    emo = client.get(f"{API}/calls/{cid}/emotions", headers=admin_a).json()["items"]
+    assert emo and {e["speaker"] for e in emo} == {"SPEAKER_00"}
+    for fmt in ("csv", "xlsx", "json", "pdf"):                                      # exportaciones con un solo participante
+        r = client.get(f"{API}/calls/{cid}/export", headers=admin_a, params={"format": fmt})
+        assert r.status_code == 200 and len(r.content) > 500, fmt
+
+
+@pytest.mark.skipif(not MONO_2.exists(), reason="falta la llamada de ejemplo")
+def test_two_voice_mono_is_detected_as_two_and_can_be_forced_to_one(client, admin_a):
+    cid = analyze(client, admin_a, MONO_2)
+    d = detail(client, admin_a, cid)
+    assert d["n_speakers"] == 2 and d["checkpoints"]["diarization"]["details"].get("silhouette", 0) >= 0.12
+    # el usuario indica que es una sola persona -> se re-analiza desde el audio
+    r = client.post(f"{API}/calls/{cid}/reanalyze", headers=admin_a, params={"speakers": "1"})
+    assert r.status_code == 200, r.text
+    assert wait_completed(client, admin_a, cid)["status"] == "COMPLETED"
+    d = detail(client, admin_a, cid)
+    assert d["n_speakers"] == 1 and d["options"]["speakers"] == "1" and d["satisfaction_p2"] is None
+    # y de nuevo a automático -> vuelve a detectar dos
+    client.post(f"{API}/calls/{cid}/reanalyze", headers=admin_a, params={"speakers": "auto"})
+    assert wait_completed(client, admin_a, cid)["status"] == "COMPLETED"
+    assert detail(client, admin_a, cid)["n_speakers"] == 2
+
+
+@pytest.mark.skipif(not MONO_1.exists(), reason="falta el monólogo de ejemplo")
+def test_forcing_two_people_on_a_monologue_is_honored(client, admin_a):
+    d = detail(client, admin_a, analyze(client, admin_a, MONO_1, speakers="2"))
+    assert d["n_speakers"] == 2 and d["checkpoints"]["diarization"]["details"].get("forced") is True

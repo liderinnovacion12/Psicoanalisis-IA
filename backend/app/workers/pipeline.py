@@ -72,6 +72,12 @@ def _check_alive(db: Session, call: Call) -> None:
         raise CallGone()
 
 
+def speakers_hint(call: Call) -> int | None:
+    """Opción «Personas en la llamada»: 1 | 2 | None (automático)."""
+    v = ((call.checkpoints or {}).get("options") or {}).get("speakers", "auto")
+    return int(v) if str(v) in ("1", "2") else None
+
+
 def work_dir(call_id: str) -> Path:
     return get_settings().data_dir / "work" / call_id
 
@@ -130,7 +136,7 @@ def stage_audio(ctx: StageCtx) -> None:
     row = get_production_model_row(ctx.db, call.org_id, "emotion")     # el modelo se fija al empezar (trazabilidad)
     call.model_id, call.model_version = row.id, f"{row.name}:{row.version}"
     with storage.local_path(call.storage_key, suffix=Path(call.filename).suffix) as src:
-        res = process_audio(src, ctx.wd, cfg, ctx.progress)
+        res = process_audio(src, ctx.wd, cfg, ctx.progress, force_mono=speakers_hint(call) == 1)
         ctx.progress(97, "Generando copia de reproducción")
         pb = ctx.wd / "playback.mp3"
         ffmpeg.make_playback(src, pb)
@@ -162,20 +168,21 @@ def stage_diarize(ctx: StageCtx) -> None:
     cfg = ctx.cfg["audio"]
     ar, vad = _audio_result(ctx.wd), load_vad(ctx.wd)
     diarizer = get_diarizer(ar["mode"], cfg)
+    hint = speakers_hint(call)
     ch = config_hash(diarizer.name, cfg["diarization"], cfg["segmentation"]["merge_gap"], cfg["segmentation"]["min_turn"],
-                     cfg["vad"], cfg["channels"])
+                     cfg["vad"], cfg["channels"], hint, "v2")
     cached = cache_get(call.org_id, call.file_hash, "diarization", ch)
     if cached:
         result = DiarizationResult.from_dict(cached)
         log.info("diarización desde caché", extra={"call_id": call.id})
     else:
         try:
-            result = diarizer.diarize(ctx.wd, ar["files"], vad, cfg, ctx.progress)
+            result = diarizer.diarize(ctx.wd, ar["files"], vad, cfg, ctx.progress, hint)
         except Exception as e:
             if diarizer.name in ("spectral", "channels"):
                 raise
             log.error("pyannote falló; se usa el respaldo espectral", extra={"call_id": call.id, "error": str(e)})
-            result = SpectralDiarizer().diarize(ctx.wd, ar["files"], vad, cfg, ctx.progress)
+            result = SpectralDiarizer().diarize(ctx.wd, ar["files"], vad, cfg, ctx.progress, hint)
             result.warnings.append("pyannote no pudo ejecutarse; se utilizó la diarización de respaldo.")
         cache_put(call.org_id, call.file_hash, "diarization", ch, result.to_dict())
     if not result.turns:
@@ -186,7 +193,11 @@ def stage_diarize(ctx: StageCtx) -> None:
     db.execute(delete(Speaker).where(Speaker.call_id == call.id))
     db.flush()
     speakers = {}
+    present = sorted({t.speaker for t in result.turns}) or ["SPEAKER_00"]
+    n_final = len(present)                     # 1 (una persona) o 2
     for i, label in enumerate(("SPEAKER_00", "SPEAKER_01")):
+        if label not in present:
+            continue
         talk = sum(t.duration for t in result.turns if t.speaker == label)
         sp = Speaker(org_id=call.org_id, call_id=call.id, label=label, role="other",
                      channel=i if ar["mode"] == "stereo_split" else None, talk_time=round(talk, 2))
@@ -199,7 +210,8 @@ def stage_diarize(ctx: StageCtx) -> None:
     call.diarization_mode = result.engine
     call.warnings = list(dict.fromkeys((call.warnings or []) + result.warnings))
     set_checkpoint(db, call, "diarization", status="COMPLETED", progress=100, engine=result.engine,
-                   quality=result.quality, n_speakers_detected=result.n_speakers_detected, details=result.details)
+                   quality=result.quality, n_speakers=n_final, n_speakers_detected=result.n_speakers_detected,
+                   requested=hint or "auto", details=result.details)
 
 
 # ------------------------------------------------------------------------------------------------------
@@ -431,8 +443,9 @@ def stage_satisfaction(ctx: StageCtx) -> None:
                    "final": round(float(np.mean(fin)), 1) if fin else None}
     interaction["variation"] = (round(interaction["final"] - interaction["initial"], 1) if ini and fin else None)
     interaction["message"] = narrative.interaction_message(interaction["variation"], sat_cfg["trend"]["stable_delta"])
+    interaction["participants"] = len(speakers)
     scores = [a.score for a in analyses.values() if a]
-    if scores:
+    if scores and len(speakers) > 1:                 # el resultado «de la interacción» solo tiene sentido con dos personas
         db.add(SatisfactionScore(org_id=call.org_id, call_id=call.id, speaker_id=None, scope="interaction",
                                  score=round(float(np.mean(scores)), 1),
                                  confidence=round(float(np.mean([a.confidence for a in analyses.values() if a])), 3),
@@ -480,7 +493,9 @@ def stage_report(ctx: StageCtx) -> None:
     tr_q = 100 * cps.get("transcription", {}).get("mean_confidence", 0)
     comps = {"audio": audio_q, "speech": speech, "segments": segments, "model": model_q, "diarization": diar_q,
              "transcription": tr_q}
-    score = sum(comps[k] * w[k] for k in comps) / sum(w.values())
+    if len(call.speakers) == 1:                      # una sola persona: no hay nada que separar; no penaliza ni premia
+        comps.pop("diarization")
+    score = sum(comps[k] * w[k] for k in comps) / sum(w[k] for k in comps)
     low = score < aq_cfg["low_threshold"]
     if low:
         warnings.append("El resultado puede presentar menor precisión debido a la calidad del análisis.")
@@ -490,7 +505,7 @@ def stage_report(ctx: StageCtx) -> None:
                                                   "de los modelos; no equivale a la exactitud real.")}
 
     events = [{"event_type": e.event_type} for e in db.scalars(select(CriticalEvent).where(CriticalEvent.call_id == call.id))]
-    names = {s.label: narrative.person_name(s.label, s.role, cfg["app"]["general"]["roles_labels"])
+    names = {s.label: narrative.person_name(s.label, s.role, cfg["app"]["general"]["roles_labels"], len(call.speakers) == 1)
              for s in call.speakers}
     if call.summary and call.summary.get("speakers"):
         s = dict(call.summary)

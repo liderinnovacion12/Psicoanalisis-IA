@@ -9,7 +9,7 @@ from app.ml.diarization.base import DiarizationResult, Diarizer, Turn, mark_over
 class ChannelDiarizer(Diarizer):
     name = "channels"
 
-    def diarize(self, work_dir: Path, files: dict[str, str], vad: dict, cfg: dict, progress=None):
+    def diarize(self, work_dir: Path, files: dict[str, str], vad: dict, cfg: dict, progress=None, hint: int | None = None):
         turns: list[Turn] = []
         for ch in (0, 1):
             turns += [Turn(f"SPEAKER_0{ch}", s, e) for s, e in vad.get(f"ch{ch}", [])]

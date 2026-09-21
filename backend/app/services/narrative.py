@@ -20,9 +20,9 @@ def confidence_word(c: float) -> str:
     return "alta" if c >= 0.75 else "moderada" if c >= 0.5 else "baja"
 
 
-def person_name(label: str, role: str | None, roles_labels: dict | None = None) -> str:
+def person_name(label: str, role: str | None, roles_labels: dict | None = None, single: bool = False) -> str:
     idx = 1 + int(label.split("_")[-1]) if label.split("_")[-1].isdigit() else 0
-    base = f"Persona {idx}"
+    base = "Persona" if single else f"Persona {idx}"
     if role and role != "other":
         rl = (roles_labels or {}).get(role, role.capitalize())
         return f"{base} ({rl})"
@@ -33,13 +33,13 @@ def executive_summary(speakers: dict, interaction: dict, events: list[dict], nam
     parts: list[str] = []
     for label, sp in speakers.items():
         m = sp["metrics"]
-        nm = names.get(label, label)
+        nm = "la persona" if len(speakers) == 1 else names.get(label, label)
         traj = (f"desde {emo(m['initial_emotion'])} como señal inicial predominante hacia {emo(m['final_emotion'])} "
                 f"en el tramo final")
         parts.append(
             f"Durante la llamada, {nm} presentó una evolución emocional {traj}; el modelo estima una satisfacción de "
             f"{sp['score']:.0f}/100 (confianza {confidence_word(sp['confidence'])}) y una tendencia {TREND_ES[sp['trend']]}.")
-    if interaction and interaction.get("initial") is not None and interaction.get("final") is not None:
+    if len(speakers) > 1 and interaction and interaction.get("initial") is not None and interaction.get("final") is not None:
         parts.append(
             f"A nivel de interacción, la satisfacción estimada pasó de {interaction['initial']:.0f} a {interaction['final']:.0f} "
             f"(variación {interaction['variation']:+.0f}).")

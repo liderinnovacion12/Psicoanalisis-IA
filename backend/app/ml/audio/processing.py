@@ -43,7 +43,7 @@ def build_filter(norm: dict) -> str | None:
 
 
 def process_audio(src: Path, work_dir: Path, cfg: dict,
-                  progress: Callable[[float, str], None] | None = None) -> dict:
+                  progress: Callable[[float, str], None] | None = None, force_mono: bool = False) -> dict:
     work_dir.mkdir(parents=True, exist_ok=True)
     p = progress or (lambda pct, msg: None)
     norm = cfg["normalization"]
@@ -60,7 +60,7 @@ def process_audio(src: Path, work_dir: Path, cfg: dict,
     p(30, "Analizando calidad y canales")
     levels = analyze_levels(raw, cfg["vad"]["block_seconds"], sr)
     layout = {"is_stereo_split": False, "reason": "mono", "correlation": None}
-    if n_ch == 2 and cfg["channels"]["detect_separation"]:
+    if n_ch == 2 and cfg["channels"]["detect_separation"] and not force_mono:
         layout = detect_channel_layout(raw, cfg["channels"], cfg["vad"]["block_seconds"], sr)
     mode = "stereo_split" if layout["is_stereo_split"] else "mono"
 

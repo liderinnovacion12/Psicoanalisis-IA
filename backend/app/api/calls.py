@@ -32,10 +32,14 @@ ROLES = {"client", "agent", "user", "advisor", "other"}
 # ---- subida ---------------------------------------------------------------------------------------------------
 @router.post("/upload", status_code=201)
 def upload_call(request: Request, file: UploadFile = File(...), allow_training: bool = Form(False),
-                display_name: str | None = Form(None), user: User = AnalystUser, db: Session = Depends(get_db)):
+                display_name: str | None = Form(None), speakers: str = Form("auto"),
+                user: User = AnalystUser, db: Session = Depends(get_db)):
     """Recibe la grabación en streaming (sin cargarla en memoria), la valida y la encola."""
     call = create_call_from_upload(db, user, file.filename or "grabacion", file.file,
                                    allow_training=allow_training, display_name=display_name)
+    if speakers not in ("auto", "1", "2"):
+        raise Conflict("Número de personas inválido (use auto, 1 o 2).")
+    call.checkpoints = {"options": {"speakers": speakers}}      # «Personas en la llamada»: auto | 1 | 2
     call.status = CallStatus.QUEUED.value
     call.processed_by = user.id
     db.commit()
@@ -142,8 +146,8 @@ def resume_call(call_id: str, user: User = AnalystUser, db: Session = Depends(ge
 
 
 @router.post("/{call_id}/reanalyze", response_model=Msg)
-def reanalyze(call_id: str, from_stage: str = Query("emotion_analysis"), user: User = AnalystUser,
-              db: Session = Depends(get_db)):
+def reanalyze(call_id: str, from_stage: str = Query("emotion_analysis"), speakers: str | None = Query(None, pattern="^(auto|1|2)$"),
+              user: User = AnalystUser, db: Session = Depends(get_db)):
     """Recalcula desde una etapa (p. ej. tras activar otro modelo o cambiar pesos). El cache evita recomputar lo idéntico."""
     call = get_call_or_404(db, user, call_id)
     if call.status not in (CallStatus.COMPLETED.value, CallStatus.ERROR.value):
@@ -151,6 +155,13 @@ def reanalyze(call_id: str, from_stage: str = Query("emotion_analysis"), user: U
     from app.workers.pipeline import STAGES
     if from_stage not in STAGES:
         raise NotFound("Etapa desconocida.")
+    if speakers is not None:                       # cambiar el nº de personas exige rehacer desde el audio (modo de canales)
+        from_stage = "audio_processing"
+        cps = dict(call.checkpoints or {})
+        cps["options"] = {**cps.get("options", {}), "speakers": speakers}
+        call.checkpoints = cps
+    if from_stage == "audio_processing":
+        call.warnings = []
     if from_stage == "emotion_analysis" or from_stage == "audio_processing":
         call.model_id = None                          # toma el modelo actualmente en producción
     if from_stage in ("emotion_analysis", "satisfaction"):
@@ -176,7 +187,7 @@ def reanalyze(call_id: str, from_stage: str = Query("emotion_analysis"), user: U
 def call_speakers(call_id: str, user: User = AnyUser, db: Session = Depends(get_db)):
     call = get_call_or_404(db, user, call_id)
     roles = get_all(db, user.org_id)["app"]["general"]["roles_labels"]
-    return [ser.speaker_out(s, roles) for s in call.speakers]
+    return [ser.speaker_out(s, roles, len(call.speakers) == 1) for s in call.speakers]
 
 
 @router.patch("/{call_id}/speakers/{speaker_id}")
@@ -193,7 +204,7 @@ def patch_speaker(call_id: str, speaker_id: str, body: SpeakerPatch, user: User 
         sp.display_name = body.display_name[:200] or None
     db.commit()
     roles = get_all(db, user.org_id)["app"]["general"]["roles_labels"]
-    return ser.speaker_out(sp, roles)
+    return ser.speaker_out(sp, roles, len(call.speakers) == 1)
 
 
 def _label_map(call: Call) -> dict[str, str]:

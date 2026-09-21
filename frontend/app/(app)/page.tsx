@@ -15,7 +15,10 @@ import { bytes, confWord, emoLabel, isProcessing, mmss, pct, satColor, SPK_COLOR
 const EXT = ["mp3", "wav", "m4a", "aac", "flac", "ogg"];
 type Phase = "idle" | "uploading" | "processing" | "result" | "error";
 
-function Result({ id, onReset }: { id: string; onReset: () => void }) {
+const SPEAKER_OPTS: { key: string; label: string }[] = [{ key: "auto", label: "Detectar automáticamente" }, { key: "1", label: "1 persona" }, { key: "2", label: "2 personas" }];
+
+function Result({ id, onReset, onReanalyze }: { id: string; onReset: () => void; onReanalyze: () => void }) {
+  const { toast, can } = useApp();
   const [d, setD] = useState<any>(null);
   useEffect(() => {
     (async () => {
@@ -29,6 +32,12 @@ function Result({ id, onReset }: { id: string; onReset: () => void }) {
   const names: Record<string, string> = Object.fromEntries(call.speakers.map((s: any) => [s.label, s.name]));
   const sp = call.summary?.speakers || {};
   const inter = call.summary?.interaction;
+  const labs = (["SPEAKER_00", "SPEAKER_01"] as const).filter((l) => sp[l]);
+  const single = call.n_speakers === 1;
+  const requested = call.options?.speakers || "auto";
+  async function reanalyze(k: string) {
+    try { await api(`/calls/${id}/reanalyze`, { method: "POST", query: { speakers: k } }); onReanalyze(); } catch (e: any) { toast("err", e.message); }
+  }
   return (
     <PlayerProvider src={audioUrl(id)}>
       <div className="space-y-5">
@@ -42,12 +51,22 @@ function Result({ id, onReset }: { id: string; onReset: () => void }) {
         </div>
         {call.warnings?.length > 0 && <Notice tone="warn"><ul className="list-disc pl-5 text-xs">{call.warnings.slice(0, 3).map((w: string, i: number) => <li key={i}>{w}</li>)}</ul></Notice>}
 
-        <div className="grid gap-4 md:grid-cols-2">
-          {(["SPEAKER_00", "SPEAKER_01"] as const).map((lab, i) => {
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-line bg-surface px-3.5 py-2 text-sm">
+          <span className="font-medium">{single ? "Se analizó 1 persona" : "Se analizaron 2 personas"}</span>
+          <span className="text-xs text-muted">({requested === "auto" ? "detectado automáticamente" : "indicado por usted"})</span>
+          {can("ANALYST") && (
+            <span className="ml-auto flex items-center gap-2 text-xs text-muted">¿No es correcto? Analizar como
+              {(single ? ["2"] : ["1"]).map((k) => <Button key={k} size="sm" onClick={() => reanalyze(k)}>{k === "1" ? "1 persona" : "2 personas"}</Button>)}
+              {requested !== "auto" && <Button size="sm" variant="ghost" onClick={() => reanalyze("auto")}>Automático</Button>}
+            </span>)}
+        </div>
+
+        <div className={`grid gap-4 ${labs.length > 1 ? "md:grid-cols-2" : "max-w-2xl"}`}>
+          {labs.map((lab, i) => {
             const s = sp[lab];
             return (
               <Card key={lab}>
-                <p className="mb-2 flex items-center gap-2 text-sm font-semibold"><i className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: SPK_COLOR[i] }} />{names[lab] || lab}</p>
+                <p className="mb-2 flex items-center gap-2 text-sm font-semibold"><i className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: SPK_COLOR[lab === "SPEAKER_00" ? 0 : 1] }} />{names[lab] || lab}</p>
                 {!s ? <p className="text-sm text-muted">Sin datos suficientes.</p> : (<>
                   <p className="text-xs text-muted">Satisfacción estimada</p>
                   <p className={`text-5xl font-semibold tabular-nums ${satColor(s.score)}`}>{s.score.toFixed(0)}<span className="text-xl text-muted">/100</span></p>
@@ -91,6 +110,7 @@ export default function Analizar() {
   const [callId, setCallId] = useState("");
   const [status, setStatus] = useState<any>(null);
   const [err, setErr] = useState("");
+  const [speakers, setSpeakers] = useState("auto");
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
 
@@ -130,7 +150,7 @@ export default function Analizar() {
     if (!file) return;
     setPhase("uploading"); setErr(""); setPctUp(0);
     const fd = new FormData();
-    fd.append("file", file); fd.append("allow_training", "false");
+    fd.append("file", file); fd.append("allow_training", "false"); fd.append("speakers", speakers);
     try {
       const r = await uploadWithProgress("/calls/upload", fd, setPctUp);
       setCallId(r.id); setPhase("processing");
@@ -141,7 +161,7 @@ export default function Analizar() {
     try { const l = await api("/calls", { query: { status: "COMPLETED" } }); setCallId(l.items[0].id); setPhase("result"); } catch (e: any) { toast("err", e.message); }
   }
 
-  if (phase === "result") return <Result id={callId} onReset={reset} />;
+  if (phase === "result") return <Result id={callId} onReset={reset} onReanalyze={() => { setStatus(null); setPhase("processing"); }} />;
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
@@ -161,6 +181,12 @@ export default function Analizar() {
             {file && <Button variant="primary" onClick={analyze} disabled={phase === "uploading" || !can("ANALYST")}>{phase === "uploading" ? "Subiendo…" : "Analizar"}</Button>}
           </div>
           <input ref={input} type="file" hidden accept=".mp3,.wav,.m4a,.aac,.flac,.ogg,audio/*" onChange={(e) => pick(e.target.files?.[0])} />
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
+          <span className="text-xs text-muted">Personas en la llamada:</span>
+          {SPEAKER_OPTS.map((o) => (
+            <button key={o.key} onClick={() => setSpeakers(o.key)} disabled={phase === "uploading"}
+              className={`rounded-full border px-3 py-1 text-xs font-medium transition ${speakers === o.key ? "border-brand bg-brand/15 text-brand" : "border-line text-muted hover:bg-surface2"}`}>{o.label}</button>))}
         </div>
         {phase === "uploading" && <div><Progress value={pctUp} /><p className="mt-1 text-center text-xs text-muted">Subiendo… {Math.round(pctUp)}%</p></div>}
         {err && <Notice tone="bad">{err}</Notice>}

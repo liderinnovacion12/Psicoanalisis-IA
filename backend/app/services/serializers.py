@@ -41,9 +41,9 @@ def status_payload(call: Call) -> dict:
             "error": user_error_message(call), "resumable": call.status == "ERROR"}
 
 
-def speaker_out(s: Speaker, roles_labels: dict | None = None) -> dict:
+def speaker_out(s: Speaker, roles_labels: dict | None = None, single: bool = False) -> dict:
     return {"id": s.id, "label": s.label, "role": s.role, "display_name": s.display_name, "channel": s.channel,
-            "talk_time": s.talk_time, "name": s.display_name or narrative.person_name(s.label, s.role, roles_labels)}
+            "talk_time": s.talk_time, "name": s.display_name or narrative.person_name(s.label, s.role, roles_labels, single)}
 
 
 def call_item(c: Call) -> dict:
@@ -67,7 +67,8 @@ def call_detail(c: Call, roles_labels: dict | None = None) -> dict:
         "bitrate": c.bitrate, "language_confidence": c.language_confidence, "diarization_mode": c.diarization_mode,
         "audio_quality_detail": c.audio_quality, "analysis_quality_detail": c.analysis_quality,
         "warnings": c.warnings or [], "summary": c.summary, "interaction": c.interaction,
-        "speakers": [speaker_out(s, roles_labels) for s in c.speakers], "stages": stages_payload(c),
+        "speakers": [speaker_out(s, roles_labels, len(c.speakers) == 1) for s in c.speakers], "stages": stages_payload(c),
+        "options": (c.checkpoints or {}).get("options", {}), "n_speakers": len(c.speakers),
         "model_id": c.model_id, "completed_at": _iso(c.completed_at), "retention_until": _iso(c.retention_until),
         "checkpoints": {k: {kk: vv for kk, vv in v.items() if kk not in ("files",)} for k, v in (c.checkpoints or {}).items()},
     })

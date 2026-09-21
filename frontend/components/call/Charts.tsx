@@ -11,7 +11,8 @@ type Who = "SPEAKER_00" | "SPEAKER_01" | "both";
 export function EmotionChart({ emotions, names, duration }: { emotions: any[]; names: Record<string, string>; duration: number }) {
   const { theme } = useApp();
   const player = usePlayer();
-  const [who, setWho] = useState<Who>("SPEAKER_00");
+  const present = Object.keys(names).sort();
+  const [who, setWho] = useState<Who>((present[0] as Who) || "SPEAKER_00");
   const labels = useMemo(() => (emotions[0] ? Object.keys(emotions[0].probabilities) : [...EMOTIONS]), [emotions]);
 
   const option = useMemo(() => {
@@ -50,7 +51,7 @@ export function EmotionChart({ emotions, names, duration }: { emotions: any[]; n
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
-        <Tabs tabs={[{ key: "SPEAKER_00" as Who, label: names.SPEAKER_00 || "Persona 1" }, { key: "SPEAKER_01" as Who, label: names.SPEAKER_01 || "Persona 2" }, { key: "both" as Who, label: "Ambas" }]} value={who} onChange={setWho} />
+        {present.length > 1 ? <Tabs tabs={[...present.map((k) => ({ key: k as Who, label: names[k] })), { key: "both" as Who, label: "Ambas" }]} value={who} onChange={setWho} /> : <span className="text-sm font-medium">{names[present[0]] || "Persona"}</span>}
         <span className="text-xs text-muted">Zoom: rueda del ratón / barra inferior</span>
       </div>
       <EChart option={option} height={330} onClick={(p) => p?.value?.[0] != null && player.seek(p.value[2] ?? p.value[0])} />
@@ -102,12 +103,12 @@ export function SatisfactionChart({ sat, events, names, duration }: { sat: any; 
 export function Timeline({ emotions, events, names, duration }: { emotions: any[]; events: any[]; names: Record<string, string>; duration: number }) {
   const player = usePlayer();
   const total = Math.max(duration, 1);
-  const rows = ["SPEAKER_00", "SPEAKER_01"];
+  const rows = Object.keys(names).sort();
   return (
     <div className="space-y-2">
       {rows.map((sp) => (
         <div key={sp} className="flex items-center gap-3">
-          <span className="w-24 shrink-0 truncate text-xs font-medium" style={{ color: SPK_COLOR[rows.indexOf(sp)] }}>{names[sp] || sp}</span>
+          <span className="w-24 shrink-0 truncate text-xs font-medium" style={{ color: SPK_COLOR[sp === "SPEAKER_00" ? 0 : 1] }}>{names[sp] || sp}</span>
           <div className="relative h-6 flex-1 overflow-hidden rounded bg-surface2">
             {emotions.filter((e) => e.speaker === sp).map((e) => (
               <button key={e.id} title={`${mmss(e.start)} · ${EMO_ES[e.emotion] || e.emotion} (${Math.round(e.confidence * 100)}%)`}

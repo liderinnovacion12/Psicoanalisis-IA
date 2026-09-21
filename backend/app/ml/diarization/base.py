@@ -47,7 +47,8 @@ class Diarizer(ABC):
 
     @abstractmethod
     def diarize(self, work_dir: Path, files: dict[str, str], vad: dict, cfg: dict,
-                progress=None) -> DiarizationResult: ...
+                progress=None, hint: int | None = None) -> DiarizationResult:
+        """hint: 1 = forzar una sola persona, 2 = forzar dos, None = automático."""
 
 
 def merge_turns(turns: list[Turn], gap: float, min_len: float = 0.0) -> list[Turn]:
@@ -95,7 +96,7 @@ def reduce_to_two(raw: dict[str, list[tuple[float, float]]], embeddings: dict[st
     n_detected = len([s for s in ranked if talk[s] / total >= cfg.get("minor_speaker_ratio", 0.05)])
     if len(ranked) >= 2 and n_detected > 2:
         warnings.append("Se detectaron más de dos posibles hablantes. Revise la diarización.")
-    majors = ranked[:2]
+    majors = [s for s in ranked[:2] if talk[s] / total >= cfg.get("minor_speaker_ratio", 0.05)] or ranked[:1]
     if not majors:
         return [], ["No se detectó voz para diarizar."], {"n_detected": 0}
     first_seen = {s: min(b for b, _ in raw[s]) for s in majors}
@@ -104,7 +105,7 @@ def reduce_to_two(raw: dict[str, list[tuple[float, float]]], embeddings: dict[st
     turns: list[Turn] = []
     for s in majors:
         turns += [Turn(label_of[s], b, e) for b, e in raw[s]]
-    minors = [s for s in ranked[2:]]
+    minors = [s for s in ranked if s not in majors]
     if minors:
         major_ts = sorted(turns, key=lambda t: t.start)
         starts = np.array([t.start for t in major_ts])
